@@ -1,0 +1,31 @@
+class AssetsPath {
+  static const String images = 'assets/images/';
+  static const String icons = 'assets/icons/';
+  static const String svg = 'assets/svg/';
+  // static const String fonts = 'assets/fonts';
+  // static const String lottie = 'assets/lottie';
+  // static const String json = 'assets/json';
+  // static const String audio = 'assets/audio';
+  // static const String video = 'assets/video';
+  static const String onboarding_1 = '${images}onboard1.png';
+  static const String onboarding_2 = '${images}onboard2.png';
+  static const String onboarding_3 = '${images}onboard3.png';
+  static const String mainScreen = '${images}main_screen.png';
+  static const String congrates = '${images}congrates.png';
+  static const String login = '${images}login.png';
+  static const String signup = '${images}signup.png';
+  static const String welcome = '${images}welcome.png';
+  static const String courseImage_1 = '${images}course_1.png';
+  static const String profile = '${images}profile.jpg';
+  static const String ic = '${images}ic.jpg';
+  static const String payment_1 = '${images}payment_1.png';
+  static const String payment_2 = '${images}payment_2.png';
+  static const String congratePayment = '${images}congrate_payment.png';
+  static const String discount = '${svg}discount.svg';
+  static const String newCourses = '${svg}new_course.svg';
+  static const String finishCourses = '${svg}worning.svg';
+  static const String worning = '${svg}worning.svg';
+  static const String vodafoneLogo = '${svg}vodafone_logo.svg';
+  static const String amanLogo = '${svg}aman_logo.svg';
+  static const String fawryLogo = '${svg}fawry_logo.svg';
+}
