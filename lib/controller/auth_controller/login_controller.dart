@@ -22,7 +22,7 @@ class LoginControllerImpl extends LoginController {
   TextEditingController emailTextEditingController = TextEditingController();
   TextEditingController passwordTextEditingController = TextEditingController();
 
-  RequestStatus requestStatus = RequestStatus.loading;
+  RequestStatus requestStatus = RequestStatus.none;
 
   late MyServices myServices;
   String? serial;
@@ -182,6 +182,9 @@ class LoginControllerImpl extends LoginController {
   void onPressLogin() async {
     appPrint(serial);
 
+    requestStatus = RequestStatus.loading;
+    update();
+
     var response = await loginData.postLoginData(
       email: emailTextEditingController.text,
       password: passwordTextEditingController.text,
@@ -273,6 +276,8 @@ class LoginControllerImpl extends LoginController {
       final error = response.$2;
       final message =
           error is Map ? error['message'] ?? "Unknown Error" : "Unknown Error";
+      requestStatus = RequestStatus.none;
+      update();
       Get.defaultDialog(
         title: AppStrings.warning,
         content: Text(message),

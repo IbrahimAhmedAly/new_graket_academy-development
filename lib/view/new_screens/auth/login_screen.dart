@@ -3,14 +3,12 @@ import 'package:get/get.dart';
 import 'package:new_graket_acadimy/routing/app_routes.dart';
 import 'package:new_graket_acadimy/core/constants/app_dimentions.dart';
 import 'package:new_graket_acadimy/core/constants/app_strings.dart';
-import 'package:new_graket_acadimy/core/constants/assets_path.dart';
 import 'package:new_graket_acadimy/core/constants/colors.dart';
+import 'package:new_graket_acadimy/core/class/request_status.dart';
 import 'package:new_graket_acadimy/core/debug_print.dart';
 import 'package:new_graket_acadimy/core/services/screen_security.dart';
-import 'package:new_graket_acadimy/view/new_widgets/auth_widgets/auth_header.dart';
 import 'package:new_graket_acadimy/view/new_widgets/auth_widgets/auth_text_field.dart';
 import 'package:new_graket_acadimy/view/new_widgets/auth_widgets/custom_auth_button.dart';
-import 'package:new_graket_acadimy/view/new_widgets/auth_widgets/remember_forget.dart';
 
 import '../../../controller/auth_controller/login_controller.dart';
 
@@ -29,141 +27,196 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   @override
-  //
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: false,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppColor.whiteColor),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
-      backgroundColor: Colors.transparent,
-      extendBody: true,
-      extendBodyBehindAppBar: true,
-      body: Container(
-        alignment: Alignment.bottomCenter,
-        width: double.infinity,
-        height: double.infinity,
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            fit: BoxFit.fill,
-            image: AssetImage(AssetsPath.login),
-          ),
-        ),
-        child: GetBuilder<LoginControllerImpl>(
-          // Provide a local fallback so the widget does not crash if the
-          // controller wasn't registered in an initial binding.
-          init: Get.isRegistered<LoginControllerImpl>()
-              ? Get.find<LoginControllerImpl>()
-              : LoginControllerImpl(),
-          assignId: true,
-          builder: (controller) {
-            return Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                AuthHeader(name: AppStrings.login),
-                Container(
-                  decoration: BoxDecoration(
-                    color: AppColor.whiteColor,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(AppRadius.radius25),
-                      topRight: Radius.circular(AppRadius.radius25),
-                    ),
-                    boxShadow: [
-                      BoxShadow(color: AppColor.grayColor),
-                      BoxShadow(
-                        color: AppColor.whiteColor,
-                        spreadRadius: -5.0,
-                        blurRadius: 40.0,
+      backgroundColor: AppColor.scaffoldBg,
+      resizeToAvoidBottomInset: true,
+      body: GetBuilder<LoginControllerImpl>(
+        init: Get.isRegistered<LoginControllerImpl>()
+            ? Get.find<LoginControllerImpl>()
+            : LoginControllerImpl(),
+        assignId: true,
+        builder: (controller) {
+          final isLoading = controller.requestStatus == RequestStatus.loading;
+
+          return SafeArea(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(horizontal: AppPadding.pad24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(height: AppHeight.h20),
+
+                  // ── Back button ──
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: AppColor.primaryLight,
+                        borderRadius: BorderRadius.circular(AppRadius.radius12),
                       ),
-                    ],
+                      child: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 18,
+                        color: AppColor.primaryColor,
+                      ),
+                    ),
                   ),
-                  height: AppHeight.h366,
-                  width: double.infinity,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
+
+                  SizedBox(height: AppHeight.h40),
+
+                  // ── Headline ──
+                  Text(
+                    "Welcome back",
+                    style: TextStyle(
+                      fontSize: AppTextSize.textSize24,
+                      fontWeight: FontWeight.w800,
+                      color: AppColor.textPrimary,
+                      letterSpacing: -0.5,
+                      height: 1.2,
+                    ),
+                  ),
+                  SizedBox(height: AppHeight.h8),
+                  Text(
+                    AppStrings.enterYourInformationCarefully,
+                    style: TextStyle(
+                      fontSize: AppTextSize.textSize14,
+                      fontWeight: FontWeight.w400,
+                      color: AppColor.textSecondary,
+                    ),
+                  ),
+
+                  SizedBox(height: AppHeight.h40),
+
+                  // ── Email field ──
+                  AuthTextField(
+                    label: AppStrings.email,
+                    hintText: AppStrings.email,
+                    isSecure: false,
+                    keyboardType: TextInputType.emailAddress,
+                    textEditingController:
+                        controller.emailTextEditingController,
+                  ),
+
+                  SizedBox(height: AppHeight.h4),
+
+                  // ── Password field ──
+                  AuthTextField(
+                    label: AppStrings.password,
+                    hintText: AppStrings.password,
+                    isSecure: true,
+                    textEditingController:
+                        controller.passwordTextEditingController,
+                  ),
+
+                  SizedBox(height: AppHeight.h8),
+
+                  // ── Remember me + Forgot password ──
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Padding(
-                        padding: EdgeInsets.all(AppPadding.pad15),
+                      Row(
+                        children: [
+                          SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: Checkbox(
+                              value: controller.rememberMe,
+                              activeColor: AppColor.primaryColor,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(5),
+                              ),
+                              side: BorderSide(
+                                color: AppColor.textHint,
+                                width: 1.5,
+                              ),
+                              onChanged: (value) {
+                                controller.toggleRememberMe(value ?? false);
+                              },
+                            ),
+                          ),
+                          SizedBox(width: AppWidth.w8),
+                          Text(
+                            AppStrings.rememberMe,
+                            style: TextStyle(
+                              fontSize: AppTextSize.textSize13,
+                              fontWeight: FontWeight.w500,
+                              color: AppColor.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      GestureDetector(
+                        onTap: () {},
                         child: Text(
-                          AppStrings.enterYourInformationCarefully,
+                          AppStrings.forgetPassword,
                           style: TextStyle(
-                            color: AppColor.headerTextColor,
-                            fontSize: AppTextSize.textSize14,
-                            fontWeight: FontWeight.normal,
+                            fontSize: AppTextSize.textSize13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColor.primaryColor,
                           ),
                         ),
                       ),
-                      AuthTextField(
-                        hintText: AppStrings.email,
-                        isSecure: false,
-                        textEditingController:
-                            controller.emailTextEditingController,
-                      ),
-                      AuthTextField(
-                        hintText: AppStrings.password,
-                        isSecure: true,
-                        textEditingController:
-                            controller.passwordTextEditingController,
-                      ),
-                      RememberForget(
-                        rememberMeState: controller.rememberMe,
-                        onChanged: (value) {
-                          controller.toggleRememberMe(value ?? false);
-                        },
-                        onTap: () {},
-                      ),
-                      CustomAuthButton(
-                        name: AppStrings.login,
-                        onTap: () {
-                          appPrint(AppStrings.login);
-                          controller.onPressLogin();
-                        },
-                      ),
-                      Padding(
-                        padding: EdgeInsets.symmetric(
-                          vertical: AppPadding.pad15,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              AppStrings.donNotHaveAnAccount,
-                              style: TextStyle(
-                                fontSize: AppTextSize.textSize13,
-                                fontWeight: FontWeight.normal,
-                              ),
-                            ),
-                            const SizedBox(width: 5),
-                            InkWell(
-                              onTap: () {
-                                Navigator.pushNamed(
-                                  context,
-                                  AppRoutesNames.signUpScreen,
-                                );
-                              },
-                              child: Text(
-                                AppStrings.signUp,
-                                style: TextStyle(
-                                  fontSize: AppTextSize.textSize13,
-                                  color: AppColor.headerTextColor,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
                     ],
                   ),
-                ),
-              ],
-            );
-          },
-        ),
+
+                  SizedBox(height: AppHeight.h32),
+
+                  // ── Login button ──
+                  CustomAuthButton(
+                    name: AppStrings.login,
+                    isLoading: isLoading,
+                    onTap: isLoading
+                        ? null
+                        : () {
+                            appPrint(AppStrings.login);
+                            controller.onPressLogin();
+                          },
+                  ),
+
+                  SizedBox(height: AppHeight.h24),
+
+                  // ── Sign up link ──
+                  Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          AppStrings.donNotHaveAnAccount,
+                          style: TextStyle(
+                            fontSize: AppTextSize.textSize14,
+                            color: AppColor.textSecondary,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.pushNamed(
+                              context,
+                              AppRoutesNames.signUpScreen,
+                            );
+                          },
+                          child: Text(
+                            AppStrings.signUp,
+                            style: TextStyle(
+                              fontSize: AppTextSize.textSize14,
+                              color: AppColor.primaryColor,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  SizedBox(height: AppHeight.h40),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
