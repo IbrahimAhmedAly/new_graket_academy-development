@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:new_graket_acadimy/core/constants/app_dimentions.dart';
 import 'package:new_graket_acadimy/core/constants/colors.dart';
 
 class CustomIndecator extends StatelessWidget {
@@ -9,21 +8,15 @@ class CustomIndecator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
-      duration: Duration(milliseconds: 250),
-      margin: EdgeInsets.only(right: AppMargin.margin5),
-      height: AppHeight.h10,
-      width: isActive ? AppWidth.w18 : AppWidth.w10,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      height: 8,
+      width: isActive ? 24 : 8,
       decoration: BoxDecoration(
-        color: isActive ? AppColor.buttonColor : Colors.grey,
-        borderRadius: BorderRadius.circular(AppRadius.radius100),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.5),
-            spreadRadius: 2,
-            blurRadius: 5,
-            offset: Offset(0, 3), // changes position of shadow
-          ),
-        ],
+        color: isActive
+            ? AppColor.primaryColor
+            : AppColor.primaryColor.withValues(alpha: 0.25),
+        borderRadius: BorderRadius.circular(100),
       ),
     );
   }

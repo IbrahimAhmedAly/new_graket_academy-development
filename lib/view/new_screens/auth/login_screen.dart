@@ -49,7 +49,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   // ── Back button ──
                   GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
+                    onTap: () => Navigator.pushNamedAndRemoveUntil(
+                        context, AppRoutesNames.welcomeScreen, (r) => false),
                     child: Container(
                       width: 40,
                       height: 40,
@@ -96,17 +97,17 @@ class _LoginScreenState extends State<LoginScreen> {
                     hintText: AppStrings.email,
                     isSecure: false,
                     keyboardType: TextInputType.emailAddress,
+                    fieldType: AuthFieldType.email,
                     textEditingController:
                         controller.emailTextEditingController,
                   ),
-
-                  SizedBox(height: AppHeight.h4),
 
                   // ── Password field ──
                   AuthTextField(
                     label: AppStrings.password,
                     hintText: AppStrings.password,
                     isSecure: true,
+                    fieldType: AuthFieldType.password,
                     textEditingController:
                         controller.passwordTextEditingController,
                   ),
@@ -175,6 +176,46 @@ class _LoginScreenState extends State<LoginScreen> {
                             controller.onPressLogin();
                           },
                   ),
+
+                  // ── Inline error ──
+                  if (controller.errorMessage != null) ...[
+                    SizedBox(height: AppHeight.h12),
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppPadding.pad16,
+                        vertical: AppPadding.pad12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColor.errorColor.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(AppRadius.radius12),
+                        border: Border.all(
+                          color: AppColor.errorColor.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.error_outline_rounded,
+                            color: AppColor.errorColor,
+                            size: 18,
+                          ),
+                          SizedBox(width: AppWidth.w8),
+                          Expanded(
+                            child: Text(
+                              controller.errorMessage!,
+                              style: TextStyle(
+                                fontSize: AppTextSize.textSize13,
+                                fontWeight: FontWeight.w500,
+                                color: AppColor.errorColor,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
 
                   SizedBox(height: AppHeight.h24),
 

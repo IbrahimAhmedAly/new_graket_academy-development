@@ -31,6 +31,9 @@ class LoginControllerImpl extends LoginController {
   /// remember me flag
   bool rememberMe = true;
 
+  /// inline error message shown below the button
+  String? errorMessage;
+
   late LoginData loginData;
 
   String _normalizeStatus(dynamic status) {
@@ -183,6 +186,7 @@ class LoginControllerImpl extends LoginController {
     appPrint(serial);
 
     requestStatus = RequestStatus.loading;
+    errorMessage = null;
     update();
 
     var response = await loginData.postLoginData(
@@ -277,21 +281,8 @@ class LoginControllerImpl extends LoginController {
       final message =
           error is Map ? error['message'] ?? "Unknown Error" : "Unknown Error";
       requestStatus = RequestStatus.none;
+      errorMessage = message;
       update();
-      Get.defaultDialog(
-        title: AppStrings.warning,
-        content: Text(message),
-        backgroundColor: Colors.white,
-        titleStyle: const TextStyle(
-          color: Colors.black,
-          fontWeight: FontWeight.bold,
-        ),
-        barrierDismissible: false,
-        confirmTextColor: Colors.white,
-        onConfirm: () {
-          Get.back();
-        },
-      );
     }
   }
 
