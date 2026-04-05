@@ -329,16 +329,113 @@ class _ExploreCourseScreenState extends State<ExploreCourseScreen> {
                                 videos: videosLength,
                                 quizzes: quizzesLength,
                               ),
-                              SizedBox(height: AppHeight.h24),
+                              SizedBox(height: AppHeight.h28),
 
-                              // ── Tabs ──
-                              _buildTabSection(
-                                description: description,
-                                instructorName: instructorName,
-                                instructorBio:
-                                    _stringValue(details?.instructor?.bio),
+                              // ── About this course ──
+                              _SectionTitle(title: "About this course"),
+                              SizedBox(height: AppHeight.h8),
+                              Text(
+                                description,
+                                style: TextStyle(
+                                  fontSize: AppTextSize.textSize14,
+                                  fontWeight: FontWeight.w400,
+                                  color: AppColor.textSecondary,
+                                  height: 1.6,
+                                ),
+                              ),
+                              SizedBox(height: AppHeight.h28),
+
+                              // ── Instructor ──
+                              _SectionTitle(title: "Instructor"),
+                              SizedBox(height: AppHeight.h12),
+                              Row(
+                                children: [
+                                  ClipOval(
+                                    child: Image.asset(
+                                      AssetsPath.profile,
+                                      width: 40,
+                                      height: 40,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                  SizedBox(width: AppWidth.w12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          instructorName,
+                                          style: TextStyle(
+                                            fontSize: AppTextSize.textSize14,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColor.textPrimary,
+                                          ),
+                                        ),
+                                        if (_stringValue(
+                                                details?.instructor?.title)
+                                            .isNotEmpty)
+                                          Text(
+                                            _stringValue(
+                                                details?.instructor?.title),
+                                            style: TextStyle(
+                                              fontSize: AppTextSize.textSize12,
+                                              color: AppColor.textHint,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (_stringValue(details?.instructor?.bio)
+                                  .isNotEmpty) ...[
+                                SizedBox(height: AppHeight.h8),
+                                Text(
+                                  _stringValue(details?.instructor?.bio),
+                                  style: TextStyle(
+                                    fontSize: AppTextSize.textSize13,
+                                    fontWeight: FontWeight.w400,
+                                    color: AppColor.textSecondary,
+                                    height: 1.5,
+                                  ),
+                                ),
+                              ],
+                              SizedBox(height: AppHeight.h28),
+
+                              // ── Course content ──
+                              _SectionTitle(title: "Course Content"),
+                              SizedBox(height: AppHeight.h12),
+                              CourseContentWidget(
                                 sections: details?.sections ?? const [],
                                 isSubscriber: isSubscriber,
+                              ),
+                              SizedBox(height: AppHeight.h28),
+
+                              // ── Reviews ──
+                              _SectionTitle(title: "Reviews"),
+                              SizedBox(height: AppHeight.h12),
+                              Padding(
+                                padding: EdgeInsets.symmetric(
+                                    vertical: AppPadding.pad20),
+                                child: Center(
+                                  child: Column(
+                                    children: [
+                                      Icon(Icons.rate_review_outlined,
+                                          size: 40,
+                                          color: AppColor.textHint),
+                                      SizedBox(height: AppHeight.h8),
+                                      Text(
+                                        "Reviews coming soon",
+                                        style: TextStyle(
+                                          fontSize: AppTextSize.textSize14,
+                                          color: AppColor.textHint,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
 
                               SizedBox(height: AppHeight.h100),
@@ -415,68 +512,6 @@ class _ExploreCourseScreenState extends State<ExploreCourseScreen> {
               icon: Icons.quiz_outlined,
               label: "$quizzes",
               subtitle: "Quizzes"),
-        ],
-      ),
-    );
-  }
-
-  // ── Tab section ──
-  Widget _buildTabSection({
-    required String description,
-    required String instructorName,
-    required String instructorBio,
-    required List<Section> sections,
-    required bool isSubscriber,
-  }) {
-    return DefaultTabController(
-      length: 3,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Tab bar
-          Container(
-            decoration: BoxDecoration(
-              color: AppColor.cardBg,
-              borderRadius: BorderRadius.circular(AppRadius.radius12),
-            ),
-            child: TabBar(
-              labelPadding:
-                  EdgeInsets.symmetric(horizontal: AppPadding.pad20),
-              tabAlignment: TabAlignment.center,
-              isScrollable: true,
-              labelColor: AppColor.primaryColor,
-              unselectedLabelColor: AppColor.textHint,
-              labelStyle: TextStyle(
-                fontSize: AppTextSize.textSize14,
-                fontWeight: FontWeight.w700,
-              ),
-              unselectedLabelStyle: TextStyle(
-                fontSize: AppTextSize.textSize14,
-                fontWeight: FontWeight.w500,
-              ),
-              indicatorColor: AppColor.primaryColor,
-              indicatorWeight: 3,
-              dividerHeight: 0,
-              tabs: const [
-                Tab(text: 'About'),
-                Tab(text: 'Content'),
-                Tab(text: 'Reviews'),
-              ],
-            ),
-          ),
-          SizedBox(height: AppHeight.h16),
-
-          // Tab content — no fixed height, each tab is
-          // rendered inline so it can expand naturally.
-          // We use IndexedStack-like approach with a
-          // StatefulBuilder to track the selected index.
-          _TabContent(
-            description: description,
-            instructorName: instructorName,
-            instructorBio: instructorBio,
-            sections: sections,
-            isSubscriber: isSubscriber,
-          ),
         ],
       ),
     );
@@ -695,150 +730,20 @@ class _StatItem extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════
-//  Tab Content — listens to TabController to show
-//  the right content inline (no fixed height).
+//  Section title widget
 // ═══════════════════════════════════════════════════
-class _TabContent extends StatefulWidget {
-  final String description;
-  final String instructorName;
-  final String instructorBio;
-  final List<Section> sections;
-  final bool isSubscriber;
-
-  const _TabContent({
-    required this.description,
-    required this.instructorName,
-    required this.instructorBio,
-    required this.sections,
-    required this.isSubscriber,
-  });
-
-  @override
-  State<_TabContent> createState() => _TabContentState();
-}
-
-class _TabContentState extends State<_TabContent> {
-  int _selectedIndex = 0;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final tabController = DefaultTabController.of(context);
-    tabController.addListener(() {
-      if (!tabController.indexIsChanging && mounted) {
-        setState(() => _selectedIndex = tabController.index);
-      }
-    });
-  }
+class _SectionTitle extends StatelessWidget {
+  final String title;
+  const _SectionTitle({required this.title});
 
   @override
   Widget build(BuildContext context) {
-    switch (_selectedIndex) {
-      case 0:
-        return _buildAboutTab();
-      case 1:
-        return CourseContentWidget(
-          sections: widget.sections,
-          isSubscriber: widget.isSubscriber,
-        );
-      case 2:
-        return _buildReviewsPlaceholder();
-      default:
-        return const SizedBox.shrink();
-    }
-  }
-
-  Widget _buildAboutTab() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // ── Description ──
-        Text(
-          "About this course",
-          style: TextStyle(
-            fontSize: AppTextSize.textSize16,
-            fontWeight: FontWeight.w700,
-            color: AppColor.textPrimary,
-          ),
-        ),
-        SizedBox(height: AppHeight.h8),
-        Text(
-          widget.description,
-          style: TextStyle(
-            fontSize: AppTextSize.textSize14,
-            fontWeight: FontWeight.w400,
-            color: AppColor.textSecondary,
-            height: 1.6,
-          ),
-        ),
-        SizedBox(height: AppHeight.h24),
-
-        // ── Instructor ──
-        Text(
-          "Instructor",
-          style: TextStyle(
-            fontSize: AppTextSize.textSize16,
-            fontWeight: FontWeight.w700,
-            color: AppColor.textPrimary,
-          ),
-        ),
-        SizedBox(height: AppHeight.h12),
-        Row(
-          children: [
-            ClipOval(
-              child: Image.asset(
-                AssetsPath.profile,
-                width: 40,
-                height: 40,
-                fit: BoxFit.cover,
-              ),
-            ),
-            SizedBox(width: AppWidth.w12),
-            Text(
-              widget.instructorName,
-              style: TextStyle(
-                fontSize: AppTextSize.textSize14,
-                fontWeight: FontWeight.w600,
-                color: AppColor.textPrimary,
-              ),
-            ),
-          ],
-        ),
-        if (widget.instructorBio.isNotEmpty) ...[
-          SizedBox(height: AppHeight.h8),
-          Text(
-            widget.instructorBio,
-            style: TextStyle(
-              fontSize: AppTextSize.textSize13,
-              fontWeight: FontWeight.w400,
-              color: AppColor.textSecondary,
-              height: 1.5,
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildReviewsPlaceholder() {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: AppPadding.pad40),
-      child: Center(
-        child: Column(
-          children: [
-            Icon(Icons.rate_review_outlined,
-                size: 48, color: AppColor.textHint),
-            SizedBox(height: AppHeight.h12),
-            Text(
-              "Reviews coming soon",
-              style: TextStyle(
-                fontSize: AppTextSize.textSize14,
-                color: AppColor.textHint,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: AppTextSize.textSize16,
+        fontWeight: FontWeight.w700,
+        color: AppColor.textPrimary,
       ),
     );
   }
