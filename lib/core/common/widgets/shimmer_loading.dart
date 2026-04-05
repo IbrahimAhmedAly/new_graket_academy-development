@@ -36,8 +36,11 @@ class ShimmerCourseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cardWidth = MediaQuery.of(context).size.width * 0.42;
+    final imageHeight = cardWidth * 0.65;
+
     return Container(
       width: cardWidth,
+      height: CategorizedCourseItem.cardHeight(context),
       margin: EdgeInsets.only(right: AppPadding.pad12),
       decoration: BoxDecoration(
         color: AppColor.cardBg,
@@ -49,20 +52,24 @@ class ShimmerCourseCard extends StatelessWidget {
           // Image placeholder
           ShimmerBox(
             width: cardWidth,
-            height: cardWidth * 0.65,
+            height: imageHeight,
             borderRadius: AppRadius.radius15,
           ),
-          Padding(
-            padding: EdgeInsets.all(AppPadding.pad10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ShimmerBox(width: cardWidth * 0.8, height: 12),
-                SizedBox(height: AppHeight.h8),
-                ShimmerBox(width: cardWidth * 0.5, height: 10),
-                SizedBox(height: AppHeight.h12),
-                ShimmerBox(width: cardWidth * 0.35, height: 14),
-              ],
+          // Info placeholder
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: AppPadding.pad10,
+                vertical: AppPadding.pad8,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  ShimmerBox(width: cardWidth * 0.75, height: 12),
+                  ShimmerBox(width: cardWidth * 0.35, height: 14),
+                ],
+              ),
             ),
           ),
         ],
