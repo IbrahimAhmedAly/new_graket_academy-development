@@ -54,13 +54,16 @@ class MyApp extends StatelessWidget {
           locale: initialLocale,
           fallbackLocale: const Locale('ar'),
           theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueAccent),
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: const Color(0xFF7C5CBF),
+              brightness: Brightness.light,
+            ),
             useMaterial3: true,
             bottomSheetTheme: const BottomSheetThemeData(
               backgroundColor: Colors.transparent,
             ),
             fontFamily: 'Arb',
-            scaffoldBackgroundColor: Colors.grey.shade100,
+            scaffoldBackgroundColor: const Color(0xFFF5F3F8),
           ),
           // routes: routes,
           initialRoute: AppRoutesNames.initialRoute,

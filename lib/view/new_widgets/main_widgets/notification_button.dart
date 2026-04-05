@@ -11,26 +11,19 @@ class NotificationButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        //Navigator.pushNamed(context, AppRoutesNames.notificationsScreen);
         context.pushNamed(AppRoutesNames.notificationsScreen);
       },
       child: Container(
+        width: AppHeight.h44,
+        height: AppHeight.h44,
         decoration: BoxDecoration(
-          color: AppColor.mainScreenButtons,
-          borderRadius: BorderRadius.circular(AppRadius.radius40),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.5),
-              spreadRadius: 2,
-              blurRadius: 5,
-              offset: Offset(0, 3), // changes position of shadow
-            ),
-          ],
+          shape: BoxShape.circle,
+          color: AppColor.primaryLight,
         ),
         child: Icon(
           Icons.notifications_none_rounded,
-          color: AppColor.whiteColor,
-          size: 40,
+          color: AppColor.primaryColor,
+          size: 22,
         ),
       ),
     );

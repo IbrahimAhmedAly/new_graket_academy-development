@@ -1,5 +1,6 @@
 class AppApis {
-  static const String domain = 'https://api.graketacademy.com/api/v1';
+  // static const String domain = 'https://api.graketacademy.com/api/v1';
+  static const String domain = 'http://localhost:3002/api/v1';
 
   /// Auth APIS
   static const String register = '$domain/auth/register';
