@@ -20,6 +20,147 @@ class Profile extends StatelessWidget {
     return uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https');
   }
 
+  void _showLogoutConfirmation(
+      BuildContext context, ProfileController controller) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        padding: EdgeInsets.fromLTRB(
+          AppPadding.pad24,
+          AppPadding.pad24,
+          AppPadding.pad24,
+          MediaQuery.of(context).padding.bottom + AppPadding.pad24,
+        ),
+        decoration: BoxDecoration(
+          color: AppColor.cardBg,
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppRadius.radius25),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // ── Handle bar ──
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColor.textHint.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            SizedBox(height: AppHeight.h24),
+
+            // ── Icon ──
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: AppColor.errorColor.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.logout_rounded,
+                color: AppColor.errorColor,
+                size: 26,
+              ),
+            ),
+            SizedBox(height: AppHeight.h16),
+
+            // ── Title ──
+            Text(
+              "Log out",
+              style: TextStyle(
+                fontSize: AppTextSize.textSize18,
+                fontWeight: FontWeight.w700,
+                color: AppColor.textPrimary,
+              ),
+            ),
+            SizedBox(height: AppHeight.h8),
+
+            // ── Description ──
+            Text(
+              "Are you sure you want to log out?\nYou can always log back in.",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: AppTextSize.textSize14,
+                fontWeight: FontWeight.w400,
+                color: AppColor.textSecondary,
+                height: 1.5,
+              ),
+            ),
+            SizedBox(height: AppHeight.h24),
+
+            // ── Buttons row ──
+            Row(
+              children: [
+                // Cancel
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(
+                      height: AppHeight.h48,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: AppColor.scaffoldBg,
+                        borderRadius:
+                            BorderRadius.circular(AppRadius.radius12),
+                      ),
+                      child: Text(
+                        "Cancel",
+                        style: TextStyle(
+                          fontSize: AppTextSize.textSize15,
+                          fontWeight: FontWeight.w600,
+                          color: AppColor.textPrimary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: AppWidth.w12),
+                // Confirm logout
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      controller.logout();
+                    },
+                    child: Container(
+                      height: AppHeight.h48,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: AppColor.errorColor,
+                        borderRadius:
+                            BorderRadius.circular(AppRadius.radius12),
+                        boxShadow: [
+                          BoxShadow(
+                            color:
+                                AppColor.errorColor.withValues(alpha: 0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        "Log out",
+                        style: TextStyle(
+                          fontSize: AppTextSize.textSize15,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return GetBuilder<ProfileController>(
@@ -222,7 +363,7 @@ class Profile extends StatelessWidget {
                       icon: Icons.logout_rounded,
                       iconColor: AppColor.errorColor,
                       isDestructive: true,
-                      onTap: () => controller.logout(),
+                      onTap: () => _showLogoutConfirmation(context, controller),
                     ),
                   ],
                 ),
