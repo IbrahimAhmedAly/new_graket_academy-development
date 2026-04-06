@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:new_graket_acadimy/routing/app_routes.dart';
 import 'package:new_graket_acadimy/core/constants/app_dimentions.dart';
 import 'package:new_graket_acadimy/core/constants/colors.dart';
-import 'package:new_graket_acadimy/routing/extention.dart';
 
 class NotificationButton extends StatelessWidget {
   const NotificationButton({super.key});
@@ -11,7 +11,7 @@ class NotificationButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        context.pushNamed(AppRoutesNames.notificationsScreen);
+        Get.toNamed(AppRoutesNames.notificationsScreen);
       },
       child: Container(
         width: AppHeight.h44,

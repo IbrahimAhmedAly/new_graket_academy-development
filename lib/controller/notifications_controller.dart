@@ -133,10 +133,60 @@ class NotificationsController extends GetxController {
       }).toList();
     }
 
-    if (elements.isEmpty && requestStatus == RequestStatus.success) {
-      requestStatus = RequestStatus.failed;
+    // Use static demo data when API returns nothing
+    if (elements.isEmpty) {
+      elements = _staticNotifications();
     }
 
+    requestStatus = RequestStatus.success;
     update();
+  }
+
+  /// Static placeholder data — remove once real API integration is done.
+  List<Map<String, dynamic>> _staticNotifications() {
+    return [
+      {
+        'notificationType': NotificationType.newCourses,
+        'header': 'New course available!',
+        'subHeader': 'UI/UX Design Fundamentals has been added. Check it out now.',
+        'date': 'Today',
+      },
+      {
+        'notificationType': NotificationType.discount,
+        'header': '30% off this week only',
+        'subHeader': 'Mobile App Development course is on sale. Don\'t miss it!',
+        'date': 'Today',
+      },
+      {
+        'notificationType': NotificationType.finishCourses,
+        'header': 'Congratulations!',
+        'subHeader': 'You completed the Flutter Basics course. Your certificate is ready.',
+        'date': 'Today',
+      },
+      {
+        'notificationType': NotificationType.worning,
+        'header': 'Your subscription expires soon',
+        'subHeader': 'Renew before April 15 to keep access to all your courses.',
+        'date': 'Yesterday',
+      },
+      {
+        'notificationType': NotificationType.newCourses,
+        'header': 'Recommended for you',
+        'subHeader': 'Based on your interests: Advanced React Patterns course.',
+        'date': 'Yesterday',
+      },
+      {
+        'notificationType': NotificationType.discount,
+        'header': 'Flash sale ended',
+        'subHeader': 'Thanks for shopping! Your order for 2 courses is confirmed.',
+        'date': 'Yesterday',
+      },
+      {
+        'notificationType': NotificationType.finishCourses,
+        'header': 'Keep it up!',
+        'subHeader': 'You\'re 80% through the Data Science course. Almost there!',
+        'date': '03 Apr 2026',
+      },
+    ];
   }
 }
