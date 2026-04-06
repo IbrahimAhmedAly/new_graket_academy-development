@@ -6,7 +6,6 @@ import 'package:new_graket_acadimy/core/common/widgets/shimmer_loading.dart';
 import 'package:new_graket_acadimy/routing/app_routes.dart';
 import 'package:new_graket_acadimy/core/constants/app_dimentions.dart';
 import 'package:new_graket_acadimy/core/constants/app_strings.dart';
-import 'package:new_graket_acadimy/core/constants/assets_path.dart';
 import 'package:new_graket_acadimy/core/constants/colors.dart';
 import 'package:new_graket_acadimy/model/courses/get_all_courses_model.dart'
     as course_model;
@@ -216,35 +215,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
                     ),
-                    Row(
-                      children: [
-                        GestureDetector(
-                          onTap: () {
-                            Get.to(() => AppRoutesNames.profileScreen);
-                          },
-                          child: Container(
-                            width: AppHeight.h44,
-                            height: AppHeight.h44,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: AppColor.primaryColor
-                                    .withValues(alpha: 0.2),
-                                width: 2,
-                              ),
-                            ),
-                            child: ClipOval(
-                              child: Image.asset(
-                                AssetsPath.profile,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: AppWidth.w10),
-                        const NotificationButton(),
-                      ],
-                    ),
+                    const NotificationButton(),
                   ],
                 ),
               ),
