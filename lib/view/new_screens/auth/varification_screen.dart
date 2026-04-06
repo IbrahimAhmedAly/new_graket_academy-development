@@ -145,6 +145,46 @@ class VarificationScreen extends StatelessWidget {
                     onTap: canSubmit ? controller.onPressVerify : null,
                   ),
 
+                  // ── Inline error ──
+                  if (controller.errorMessage != null) ...[
+                    SizedBox(height: AppHeight.h12),
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppPadding.pad16,
+                        vertical: AppPadding.pad12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColor.errorColor.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(AppRadius.radius12),
+                        border: Border.all(
+                          color: AppColor.errorColor.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.error_outline_rounded,
+                            color: AppColor.errorColor,
+                            size: 18,
+                          ),
+                          SizedBox(width: AppWidth.w8),
+                          Expanded(
+                            child: Text(
+                              controller.errorMessage!,
+                              style: TextStyle(
+                                fontSize: AppTextSize.textSize13,
+                                fontWeight: FontWeight.w500,
+                                color: AppColor.errorColor,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
                   SizedBox(height: AppHeight.h24),
 
                   // ── Resend link ──
