@@ -329,6 +329,13 @@ class _ExploreCourseScreenState extends State<ExploreCourseScreen> {
                                 videos: videosLength,
                                 quizzes: quizzesLength,
                               ),
+
+                              // ── Progress banner (purchased courses only) ──
+                              if (controller.isPurchased) ...[
+                                SizedBox(height: AppHeight.h16),
+                                _ProgressBanner(controller: controller),
+                              ],
+
                               SizedBox(height: AppHeight.h28),
 
                               // ── About this course ──
@@ -408,7 +415,7 @@ class _ExploreCourseScreenState extends State<ExploreCourseScreen> {
                               SizedBox(height: AppHeight.h12),
                               CourseContentWidget(
                                 sections: details?.sections ?? const [],
-                                isSubscriber: isSubscriber,
+                                controller: controller,
                               ),
                               SizedBox(height: AppHeight.h28),
 
@@ -453,9 +460,7 @@ class _ExploreCourseScreenState extends State<ExploreCourseScreen> {
                 priceText: priceText,
                 hasDiscount: hasDiscount,
                 originalPrice: originalPrice,
-                onAddToBasket: () => controller.addToBasket(),
-                onBuyNow: () =>
-                    Get.toNamed(AppRoutesNames.enterCodeScreen),
+                controller: controller,
               ),
             ],
           ),
@@ -522,9 +527,10 @@ class _ExploreCourseScreenState extends State<ExploreCourseScreen> {
     required String priceText,
     required bool hasDiscount,
     required double originalPrice,
-    required VoidCallback onAddToBasket,
-    required VoidCallback onBuyNow,
+    required CourseDetailsControllerImp controller,
   }) {
+    final isPurchased = controller.isPurchased;
+
     return Container(
       padding: EdgeInsets.only(
         left: AppPadding.pad16,
@@ -542,76 +548,103 @@ class _ExploreCourseScreenState extends State<ExploreCourseScreen> {
           ),
         ],
       ),
-      child: Row(
-        children: [
-          // Price section
-          Expanded(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: isPurchased
+          // ── Purchased: single full-width "Continue Learning" button ──
+          ? GestureDetector(
+              onTap: () => controller.continueLearning(),
+              child: Container(
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(vertical: AppPadding.pad12),
+                decoration: BoxDecoration(
+                  color: AppColor.primaryColor,
+                  borderRadius: BorderRadius.circular(AppRadius.radius12),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.play_circle_outline_rounded,
+                        color: Colors.white, size: 20),
+                    SizedBox(width: AppWidth.w8),
+                    Text(
+                      "Continue Learning",
+                      style: TextStyle(
+                        fontSize: AppTextSize.textSize15,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          // ── Not purchased: price + basket icon + buy now ──
+          : Row(
               children: [
-                if (hasDiscount)
-                  Text(
-                    "${originalPrice.toStringAsFixed(0)} EGP",
-                    style: TextStyle(
-                      fontSize: AppTextSize.textSize12,
-                      color: AppColor.textHint,
-                      decoration: TextDecoration.lineThrough,
-                      decorationColor: AppColor.textHint,
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (hasDiscount)
+                        Text(
+                          "${originalPrice.toStringAsFixed(0)} EGP",
+                          style: TextStyle(
+                            fontSize: AppTextSize.textSize12,
+                            color: AppColor.textHint,
+                            decoration: TextDecoration.lineThrough,
+                            decorationColor: AppColor.textHint,
+                          ),
+                        ),
+                      Text(
+                        priceText,
+                        style: TextStyle(
+                          fontSize: AppTextSize.textSize20,
+                          fontWeight: FontWeight.w800,
+                          color: AppColor.priceColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => controller.addToBasket(),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColor.primaryLight,
+                      borderRadius: BorderRadius.circular(AppRadius.radius12),
+                    ),
+                    child: const Icon(
+                      Icons.shopping_basket_outlined,
+                      color: AppColor.primaryColor,
+                      size: 22,
                     ),
                   ),
-                Text(
-                  priceText,
-                  style: TextStyle(
-                    fontSize: AppTextSize.textSize20,
-                    fontWeight: FontWeight.w800,
-                    color: AppColor.priceColor,
+                ),
+                SizedBox(width: AppWidth.w10),
+                GestureDetector(
+                  onTap: () => Get.toNamed(AppRoutesNames.enterCodeScreen),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppPadding.pad24,
+                      vertical: AppPadding.pad12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColor.primaryColor,
+                      borderRadius: BorderRadius.circular(AppRadius.radius12),
+                    ),
+                    child: Text(
+                      AppStrings.buyNow,
+                      style: TextStyle(
+                        fontSize: AppTextSize.textSize14,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
-          ),
-          // Basket button
-          GestureDetector(
-            onTap: onAddToBasket,
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColor.primaryLight,
-                borderRadius: BorderRadius.circular(AppRadius.radius12),
-              ),
-              child: const Icon(
-                Icons.shopping_basket_outlined,
-                color: AppColor.primaryColor,
-                size: 22,
-              ),
-            ),
-          ),
-          SizedBox(width: AppWidth.w10),
-          // Buy now button
-          GestureDetector(
-            onTap: onBuyNow,
-            child: Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: AppPadding.pad24,
-                vertical: AppPadding.pad12,
-              ),
-              decoration: BoxDecoration(
-                color: AppColor.primaryColor,
-                borderRadius: BorderRadius.circular(AppRadius.radius12),
-              ),
-              child: Text(
-                AppStrings.buyNow,
-                style: TextStyle(
-                  fontSize: AppTextSize.textSize14,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -754,13 +787,26 @@ class _SectionTitle extends StatelessWidget {
 // ═══════════════════════════════════════════════════
 class CourseContentWidget extends StatelessWidget {
   final List<Section> sections;
-  final bool isSubscriber;
+  final CourseDetailsControllerImp controller;
 
   const CourseContentWidget({
     super.key,
     required this.sections,
-    required this.isSubscriber,
+    required this.controller,
   });
+
+  IconData _contentIcon(String? type) {
+    switch ((type ?? '').toUpperCase()) {
+      case 'VIDEO':
+        return Icons.play_circle_outline_rounded;
+      case 'PDF':
+        return Icons.picture_as_pdf_outlined;
+      case 'QUIZ':
+        return Icons.quiz_outlined;
+      default:
+        return Icons.description_outlined;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -811,9 +857,7 @@ class CourseContentWidget extends StatelessWidget {
                 horizontal: AppPadding.pad16,
                 vertical: AppPadding.pad4,
               ),
-              childrenPadding: EdgeInsets.only(
-                bottom: AppPadding.pad8,
-              ),
+              childrenPadding: EdgeInsets.only(bottom: AppPadding.pad8),
               title: Text(
                 section.title ?? 'Section ${index + 1}',
                 style: TextStyle(
@@ -833,52 +877,72 @@ class CourseContentWidget extends StatelessWidget {
               collapsedIconColor: AppColor.textHint,
               children: List.generate(contents.length, (contentIndex) {
                 final content = contents[contentIndex];
-                final isVideo =
-                    (content.type ?? '').toLowerCase().contains('video');
-                return Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: AppPadding.pad16,
-                    vertical: AppPadding.pad6,
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: AppColor.primaryLight,
-                          borderRadius:
-                              BorderRadius.circular(AppRadius.radius10),
-                        ),
-                        child: Icon(
-                          isVideo
-                              ? Icons.play_circle_outline_rounded
-                              : Icons.description_outlined,
-                          color: AppColor.primaryColor,
-                          size: 16,
-                        ),
-                      ),
-                      SizedBox(width: AppWidth.w12),
-                      Expanded(
-                        child: Text(
-                          content.title ?? 'Lecture ${contentIndex + 1}',
-                          style: TextStyle(
-                            fontSize: AppTextSize.textSize13,
-                            fontWeight: FontWeight.w500,
-                            color: AppColor.textPrimary,
+                final hasAccess = controller.contentHasAccess(content);
+                return GestureDetector(
+                  onTap: hasAccess ? () => controller.continueLearning() : null,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppPadding.pad16,
+                      vertical: AppPadding.pad6,
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: hasAccess
+                                ? AppColor.primaryLight
+                                : AppColor.gray.withValues(alpha: 0.1),
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.radius10),
+                          ),
+                          child: Icon(
+                            _contentIcon(content.type),
+                            color: hasAccess
+                                ? AppColor.primaryColor
+                                : AppColor.textHint,
+                            size: 16,
                           ),
                         ),
-                      ),
-                      Icon(
-                        isSubscriber
-                            ? Icons.lock_open_rounded
-                            : Icons.lock_rounded,
-                        color: isSubscriber
-                            ? AppColor.greenColor
-                            : AppColor.textHint,
-                        size: 16,
-                      ),
-                    ],
+                        SizedBox(width: AppWidth.w12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                content.title ?? 'Lesson ${contentIndex + 1}',
+                                style: TextStyle(
+                                  fontSize: AppTextSize.textSize13,
+                                  fontWeight: FontWeight.w500,
+                                  color: hasAccess
+                                      ? AppColor.textPrimary
+                                      : AppColor.textHint,
+                                ),
+                              ),
+                              if (content.duration != null &&
+                                  content.duration! > 0)
+                                Text(
+                                  "${content.duration} min",
+                                  style: TextStyle(
+                                    fontSize: AppTextSize.textSize10,
+                                    color: AppColor.textHint,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          hasAccess
+                              ? Icons.lock_open_rounded
+                              : Icons.lock_rounded,
+                          color: hasAccess
+                              ? AppColor.greenColor
+                              : AppColor.textHint,
+                          size: 16,
+                        ),
+                      ],
+                    ),
                   ),
                 );
               }),
@@ -989,6 +1053,124 @@ class _CourseDetailsSkeletonState extends State<_CourseDetailsSkeleton>
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Progress banner (shown on course details for purchased courses)
+// ═══════════════════════════════════════════════════════════════
+class _ProgressBanner extends StatelessWidget {
+  final CourseDetailsControllerImp controller;
+  const _ProgressBanner({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    final pct = controller.progressPercentage;
+    final isComplete = pct >= 100;
+    final isStarted = controller.hasStartedCourse;
+
+    final titleText = isComplete
+        ? 'Course Completed'
+        : isStarted
+            ? 'Your Progress'
+            : 'Ready to Start';
+    final subtitleText = isComplete
+        ? 'You finished every lesson. Amazing work!'
+        : isStarted
+            ? '${controller.completedContents} of ${controller.totalContents} lessons complete'
+            : 'Jump in and start learning';
+
+    return Container(
+      padding: EdgeInsets.all(AppPadding.pad16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isComplete
+              ? [
+                  AppColor.greenColor.withValues(alpha: 0.15),
+                  AppColor.greenColor.withValues(alpha: 0.05),
+                ]
+              : [
+                  AppColor.primaryColor.withValues(alpha: 0.12),
+                  AppColor.primaryColor.withValues(alpha: 0.04),
+                ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(AppRadius.radius15),
+        border: Border.all(
+          color: (isComplete ? AppColor.greenColor : AppColor.primaryColor)
+              .withValues(alpha: 0.2),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: isComplete ? AppColor.greenColor : AppColor.primaryColor,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              isComplete
+                  ? Icons.emoji_events_rounded
+                  : Icons.play_circle_outline_rounded,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+          SizedBox(width: AppWidth.w12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  titleText,
+                  style: TextStyle(
+                    fontSize: AppTextSize.textSize14,
+                    fontWeight: FontWeight.w800,
+                    color: AppColor.textPrimary,
+                  ),
+                ),
+                SizedBox(height: AppHeight.h4),
+                Text(
+                  subtitleText,
+                  style: TextStyle(
+                    fontSize: AppTextSize.textSize12,
+                    color: AppColor.textSecondary,
+                  ),
+                ),
+                SizedBox(height: AppHeight.h8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadius.radius10),
+                  child: LinearProgressIndicator(
+                    value: (pct / 100).clamp(0.0, 1.0),
+                    minHeight: 5,
+                    backgroundColor:
+                        AppColor.gray.withValues(alpha: 0.15),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      isComplete
+                          ? AppColor.greenColor
+                          : AppColor.primaryColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(width: AppWidth.w12),
+          Text(
+            '$pct%',
+            style: TextStyle(
+              fontSize: AppTextSize.textSize18,
+              fontWeight: FontWeight.w800,
+              color:
+                  isComplete ? AppColor.greenColor : AppColor.primaryColor,
+            ),
+          ),
+        ],
       ),
     );
   }
