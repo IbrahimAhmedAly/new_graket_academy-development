@@ -5,7 +5,6 @@ import 'package:new_graket_acadimy/controller/auth_controller/signup_varificatio
 import 'package:new_graket_acadimy/core/class/request_status.dart';
 import 'package:new_graket_acadimy/core/constants/app_dimentions.dart';
 import 'package:new_graket_acadimy/core/constants/app_strings.dart';
-import 'package:new_graket_acadimy/core/constants/assets_path.dart';
 import 'package:new_graket_acadimy/core/constants/colors.dart';
 import 'package:new_graket_acadimy/view/new_widgets/auth_widgets/custom_auth_button.dart';
 import 'package:new_graket_acadimy/routing/app_routes.dart';
@@ -16,17 +15,8 @@ class VarificationScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppColor.whiteColor),
-          onPressed: () => Get.offAllNamed(AppRoutesNames.loginScreen),
-        ),
-      ),
-      backgroundColor: Colors.transparent,
-      extendBody: true,
-      extendBodyBehindAppBar: true,
+      backgroundColor: AppColor.scaffoldBg,
+      resizeToAvoidBottomInset: true,
       body: GetBuilder<SignupVarificationControllerImpl>(
         init: Get.isRegistered<SignupVarificationControllerImpl>()
             ? Get.find<SignupVarificationControllerImpl>()
@@ -35,125 +25,200 @@ class VarificationScreen extends StatelessWidget {
           final isLoading = controller.requestStatus == RequestStatus.loading;
           final canSubmit = controller.verificationCode.length == 6 && !isLoading;
 
-          return Container(
-            alignment: Alignment.bottomCenter,
-            width: double.maxFinite,
-            height: double.maxFinite,
-            decoration: BoxDecoration(
-              image: DecorationImage(
-                  fit: BoxFit.fill,
-                  image: AssetImage(
-                    AssetsPath.login,
-                  )),
-            ),
+          return SafeArea(
             child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(horizontal: AppPadding.pad24),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      color: AppColor.whiteColor,
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(AppRadius.radius25),
-                        topRight: Radius.circular(AppRadius.radius25),
+                  SizedBox(height: AppHeight.h20),
+
+                  // ── Back button ──
+                  GestureDetector(
+                    onTap: () => Get.offAllNamed(AppRoutesNames.loginScreen),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: AppColor.primaryLight,
+                        borderRadius: BorderRadius.circular(AppRadius.radius12),
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColor.grayColor,
-                        ),
-                        BoxShadow(
-                          color: AppColor.whiteColor,
-                          spreadRadius: -5.0,
-                          blurRadius: 40.0,
-                        ),
-                      ],
+                      child: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 18,
+                        color: AppColor.primaryColor,
+                      ),
                     ),
-                    height: AppHeight.h366,
-                    width: double.maxFinite,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
+                  ),
+
+                  SizedBox(height: AppHeight.h40),
+
+                  // ── Email icon ──
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: AppColor.primaryLight,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Icon(
+                      Icons.mark_email_unread_outlined,
+                      size: 32,
+                      color: AppColor.primaryColor,
+                    ),
+                  ),
+
+                  SizedBox(height: AppHeight.h24),
+
+                  // ── Headline ──
+                  Text(
+                    "Verify your email",
+                    style: TextStyle(
+                      fontSize: AppTextSize.textSize24,
+                      fontWeight: FontWeight.w800,
+                      color: AppColor.textPrimary,
+                      letterSpacing: -0.5,
+                      height: 1.2,
+                    ),
+                  ),
+                  SizedBox(height: AppHeight.h8),
+                  Text(
+                    AppStrings.emailSent,
+                    style: TextStyle(
+                      fontSize: AppTextSize.textSize14,
+                      fontWeight: FontWeight.w400,
+                      color: AppColor.textSecondary,
+                      height: 1.5,
+                    ),
+                  ),
+
+                  // Email address pill
+                  if (controller.email != null &&
+                      controller.email!.isNotEmpty) ...[
+                    SizedBox(height: AppHeight.h12),
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppPadding.pad12,
+                        vertical: AppPadding.pad6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColor.primaryLight,
+                        borderRadius: BorderRadius.circular(AppRadius.radius20),
+                      ),
+                      child: Text(
+                        controller.email!,
+                        style: TextStyle(
+                          fontSize: AppTextSize.textSize13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColor.primaryColor,
+                        ),
+                      ),
+                    ),
+                  ],
+
+                  SizedBox(height: AppHeight.h40),
+
+                  // ── OTP fields ──
+                  OtpTextField(
+                    numberOfFields: 6,
+                    borderColor: AppColor.textHint.withValues(alpha: 0.4),
+                    focusedBorderColor: AppColor.primaryColor,
+                    borderRadius: BorderRadius.circular(AppRadius.radius12),
+                    margin: EdgeInsets.symmetric(horizontal: AppMargin.margin5),
+                    showFieldAsBox: true,
+                    fieldWidth: (MediaQuery.of(context).size.width - AppPadding.pad24 * 2 - AppMargin.margin5 * 12) / 6,
+                    textStyle: TextStyle(
+                      fontSize: AppTextSize.textSize20,
+                      fontWeight: FontWeight.w700,
+                      color: AppColor.textPrimary,
+                    ),
+                    onCodeChanged: controller.onCodeChanged,
+                    onSubmit: controller.onCodeChanged,
+                  ),
+
+                  SizedBox(height: AppHeight.h40),
+
+                  // ── Confirm button ──
+                  CustomAuthButton(
+                    name: AppStrings.confirm,
+                    isLoading: isLoading,
+                    onTap: canSubmit ? controller.onPressVerify : null,
+                  ),
+
+                  // ── Inline error ──
+                  if (controller.errorMessage != null) ...[
+                    SizedBox(height: AppHeight.h12),
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppPadding.pad16,
+                        vertical: AppPadding.pad12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColor.errorColor.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(AppRadius.radius12),
+                        border: Border.all(
+                          color: AppColor.errorColor.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.error_outline_rounded,
+                            color: AppColor.errorColor,
+                            size: 18,
+                          ),
+                          SizedBox(width: AppWidth.w8),
+                          Expanded(
+                            child: Text(
+                              controller.errorMessage!,
+                              style: TextStyle(
+                                fontSize: AppTextSize.textSize13,
+                                fontWeight: FontWeight.w500,
+                                color: AppColor.errorColor,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  SizedBox(height: AppHeight.h24),
+
+                  // ── Resend link ──
+                  Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Padding(
-                          padding: EdgeInsets.all(AppPadding.pad15),
-                          child: Column(
-                            children: [
-                              Text(
-                                textAlign: TextAlign.center,
-                                AppStrings.emailSent,
-                                style: TextStyle(
-                                  color: AppColor.headerTextColor,
-                                  fontSize: AppTextSize.textSize14,
-                                  fontWeight: FontWeight.normal,
-                                ),
-                              ),
-                              if (controller.email != null &&
-                                  controller.email!.isNotEmpty)
-                                Padding(
-                                  padding:
-                                      EdgeInsets.only(top: AppPadding.pad8),
-                                  child: Text(
-                                    controller.email!,
-                                    style: TextStyle(
-                                      color: AppColor.grayColor,
-                                      fontSize: AppTextSize.textSize12,
-                                    ),
-                                  ),
-                                ),
-                            ],
+                        Text(
+                          AppStrings.donNotAnyMails,
+                          style: TextStyle(
+                            fontSize: AppTextSize.textSize14,
+                            color: AppColor.textSecondary,
+                            fontWeight: FontWeight.w400,
                           ),
                         ),
-                        Padding(
-                          padding:
-                              EdgeInsets.symmetric(vertical: AppPadding.pad25),
-                          child: OtpTextField(
-                            numberOfFields: 6,
-                            borderColor: AppColor.buttonColor,
-                            focusedBorderColor: AppColor.buttonColor,
-                            borderRadius: BorderRadius.all(
-                                Radius.circular(AppRadius.radius15)),
-                            margin: EdgeInsets.all(AppMargin.margin10),
-                            showFieldAsBox: true,
-                            onCodeChanged: controller.onCodeChanged,
-                            onSubmit: controller.onCodeChanged,
+                        SizedBox(width: AppWidth.w4),
+                        GestureDetector(
+                          onTap: isLoading ? null : controller.onPressSendAgain,
+                          child: Text(
+                            AppStrings.sendAgain,
+                            style: TextStyle(
+                              fontSize: AppTextSize.textSize14,
+                              color: isLoading
+                                  ? AppColor.textHint
+                                  : AppColor.primaryColor,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
-                        CustomAuthButton(
-                          name: isLoading
-                              ? "${AppStrings.confirm}..."
-                              : AppStrings.confirm,
-                          onTap: canSubmit ? controller.onPressVerify : null,
-                        ),
-                        Padding(
-                          padding:
-                              EdgeInsets.symmetric(vertical: AppPadding.pad15),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                AppStrings.donNotAnyMails,
-                                style: TextStyle(
-                                  fontSize: AppTextSize.textSize12,
-                                  fontWeight: FontWeight.normal,
-                                ),
-                              ),
-                              InkWell(
-                                onTap:
-                                    isLoading ? null : controller.onPressSendAgain,
-                                child: Text(
-                                  AppStrings.sendAgain,
-                                  style: TextStyle(
-                                    fontSize: AppTextSize.textSize13,
-                                    color: AppColor.headerTextColor,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
                       ],
                     ),
                   ),
+
+                  SizedBox(height: AppHeight.h40),
                 ],
               ),
             ),

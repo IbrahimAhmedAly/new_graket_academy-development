@@ -4,15 +4,10 @@ import 'package:new_graket_acadimy/controller/auth_controller/signup_controller.
 import 'package:new_graket_acadimy/routing/app_routes.dart';
 import 'package:new_graket_acadimy/core/constants/app_dimentions.dart';
 import 'package:new_graket_acadimy/core/constants/app_strings.dart';
-import 'package:new_graket_acadimy/core/constants/assets_path.dart';
 import 'package:new_graket_acadimy/core/constants/colors.dart';
-import 'package:new_graket_acadimy/core/debug_print.dart';
-import 'package:new_graket_acadimy/view/new_widgets/auth_widgets/agreement.dart';
-import 'package:new_graket_acadimy/view/new_widgets/auth_widgets/auth_header.dart';
+import 'package:new_graket_acadimy/core/class/request_status.dart';
 import 'package:new_graket_acadimy/view/new_widgets/auth_widgets/auth_text_field.dart';
 import 'package:new_graket_acadimy/view/new_widgets/auth_widgets/custom_auth_button.dart';
-
-import '../../../core/class/handling_view_data.dart';
 
 class SignUpScreen extends StatelessWidget {
   const SignUpScreen({super.key});
@@ -20,141 +15,246 @@ class SignUpScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppColor.whiteColor),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
-      backgroundColor: Colors.transparent,
-      extendBody: true,
-      extendBodyBehindAppBar: true,
+      backgroundColor: AppColor.scaffoldBg,
+      resizeToAvoidBottomInset: true,
       body: GetBuilder<SignUpControllerImpl>(
-        // Create the controller if dependency injection wasn't set up yet.
         init: Get.isRegistered<SignUpControllerImpl>()
             ? Get.find<SignUpControllerImpl>()
             : SignUpControllerImpl(),
         assignId: true,
         builder: (controller) {
-          return Container(
-            alignment: Alignment.bottomCenter,
-            width: double.maxFinite,
-            height: double.maxFinite,
-            decoration: BoxDecoration(
-              image: DecorationImage(
-                  fit: BoxFit.fill,
-                  image: AssetImage(
-                    AssetsPath.signup,
-                  )),
-            ),
+          final isLoading = controller.requestStatus == RequestStatus.loading;
+          final canSubmit =
+              controller.isAgreementChecked &&
+              controller.allFieldsFilled &&
+              !isLoading;
+
+          return SafeArea(
             child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(horizontal: AppPadding.pad24),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  AuthHeader(
-                    name: AppStrings.signUp,
-                  ),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: AppColor.whiteColor,
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(AppRadius.radius25),
-                        topRight: Radius.circular(AppRadius.radius25),
+                  SizedBox(height: AppHeight.h20),
+
+                  // ── Back button ──
+                  GestureDetector(
+                    onTap: () => Navigator.pushNamedAndRemoveUntil(
+                        context, AppRoutesNames.welcomeScreen, (r) => false),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: AppColor.primaryLight,
+                        borderRadius: BorderRadius.circular(AppRadius.radius12),
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColor.grayColor,
-                        ),
-                        BoxShadow(
-                          color: AppColor.whiteColor,
-                          spreadRadius: -5.0,
-                          blurRadius: 40.0,
-                        ),
-                      ],
+                      child: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 18,
+                        color: AppColor.primaryColor,
+                      ),
                     ),
-                    height: AppHeight.h445,
-                    width: double.maxFinite,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: EdgeInsets.all(AppPadding.pad15),
-                          child: Text(
-                            AppStrings.createYourNewAccount,
-                            style: TextStyle(
-                              color: AppColor.headerTextColor,
-                              fontSize: AppTextSize.textSize14,
-                              fontWeight: FontWeight.normal,
+                  ),
+
+                  SizedBox(height: AppHeight.h40),
+
+                  // ── Headline ──
+                  Text(
+                    "Create account",
+                    style: TextStyle(
+                      fontSize: AppTextSize.textSize24,
+                      fontWeight: FontWeight.w800,
+                      color: AppColor.textPrimary,
+                      letterSpacing: -0.5,
+                      height: 1.2,
+                    ),
+                  ),
+                  SizedBox(height: AppHeight.h8),
+                  Text(
+                    AppStrings.createYourNewAccount,
+                    style: TextStyle(
+                      fontSize: AppTextSize.textSize14,
+                      fontWeight: FontWeight.w400,
+                      color: AppColor.textSecondary,
+                    ),
+                  ),
+
+                  SizedBox(height: AppHeight.h40),
+
+                  // ── Full name field ──
+                  AuthTextField(
+                    label: AppStrings.fullName,
+                    hintText: AppStrings.fullName,
+                    isSecure: false,
+                    keyboardType: TextInputType.name,
+                    fieldType: AuthFieldType.name,
+                    textEditingController:
+                        controller.fullNameTextEditingController,
+                  ),
+
+                  // ── Email field ──
+                  AuthTextField(
+                    label: AppStrings.email,
+                    hintText: AppStrings.email,
+                    isSecure: false,
+                    keyboardType: TextInputType.emailAddress,
+                    fieldType: AuthFieldType.email,
+                    textEditingController:
+                        controller.emailTextEditingController,
+                  ),
+
+                  // ── Password field ──
+                  AuthTextField(
+                    label: AppStrings.password,
+                    hintText: AppStrings.password,
+                    isSecure: true,
+                    fieldType: AuthFieldType.password,
+                    textEditingController:
+                        controller.passwordTextEditingController,
+                  ),
+
+                  SizedBox(height: AppHeight.h16),
+
+                  // ── Agreement row ──
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: Checkbox(
+                          value: controller.isAgreementChecked,
+                          activeColor: AppColor.primaryColor,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                          side: BorderSide(
+                            color: AppColor.textHint,
+                            width: 1.5,
+                          ),
+                          onChanged: (value) {
+                            controller.agreementCheckFun();
+                          },
+                        ),
+                      ),
+                      SizedBox(width: AppWidth.w8),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {},
+                          child: RichText(
+                            text: TextSpan(
+                              style: TextStyle(
+                                fontSize: AppTextSize.textSize13,
+                                fontWeight: FontWeight.w400,
+                                color: AppColor.textSecondary,
+                              ),
+                              children: [
+                                TextSpan(text: AppStrings.iAgree),
+                                TextSpan(
+                                  text: "terms and policy",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColor.primaryColor,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
-                        AuthTextField(
-                          hintText: AppStrings.fullName,
-                          isSecure: false,
-                          textEditingController:
-                              controller.fullNameTextEditingController,
+                      ),
+                    ],
+                  ),
+
+                  SizedBox(height: AppHeight.h32),
+
+                  // ── Sign up button ──
+                  CustomAuthButton(
+                    name: AppStrings.signUp,
+                    isLoading: isLoading,
+                    onTap: canSubmit
+                        ? () {
+                            controller.onPressSignUp();
+                          }
+                        : null,
+                  ),
+
+                  // ── Inline error ──
+                  if (controller.errorMessage != null) ...[
+                    SizedBox(height: AppHeight.h12),
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppPadding.pad16,
+                        vertical: AppPadding.pad12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColor.errorColor.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(AppRadius.radius12),
+                        border: Border.all(
+                          color: AppColor.errorColor.withValues(alpha: 0.3),
+                          width: 1,
                         ),
-                        AuthTextField(
-                          hintText: AppStrings.email,
-                          isSecure: false,
-                          textEditingController:
-                              controller.emailTextEditingController,
-                        ),
-                        AuthTextField(
-                          hintText: AppStrings.password,
-                          isSecure: true,
-                          textEditingController:
-                              controller.passwordTextEditingController,
-                        ),
-                        Agreement(
-                          isAgree: controller.isAgreementChecked,
-                          agreementCheckFun: (value) {
-                            controller.agreementCheckFun();
-                          },
-                          goToAgreementFun: () {},
-                        ),
-                        CustomAuthButton(
-                          name: AppStrings.signUp,
-                          onTap: controller.isAgreementChecked == false
-                              ? null
-                              : () {
-                                  controller.onPressSignUp();
-                                },
-                        ),
-                        Padding(
-                          padding:
-                              EdgeInsets.symmetric(vertical: AppPadding.pad15),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                AppStrings.alreadyHaveAnAccount,
-                                style: TextStyle(
-                                  fontSize: AppTextSize.textSize12,
-                                  fontWeight: FontWeight.normal,
-                                ),
-                              ),
-                              InkWell(
-                                onTap: () {
-                                  Navigator.pushNamed(
-                                      context, AppRoutesNames.loginScreen);
-                                },
-                                child: Text(
-                                  AppStrings.login,
-                                  style: TextStyle(
-                                    fontSize: AppTextSize.textSize13,
-                                    color: AppColor.headerTextColor,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.error_outline_rounded,
+                            color: AppColor.errorColor,
+                            size: 18,
                           ),
-                        )
+                          SizedBox(width: AppWidth.w8),
+                          Expanded(
+                            child: Text(
+                              controller.errorMessage!,
+                              style: TextStyle(
+                                fontSize: AppTextSize.textSize13,
+                                fontWeight: FontWeight.w500,
+                                color: AppColor.errorColor,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  SizedBox(height: AppHeight.h24),
+
+                  // ── Login link ──
+                  Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          AppStrings.alreadyHaveAnAccount,
+                          style: TextStyle(
+                            fontSize: AppTextSize.textSize14,
+                            color: AppColor.textSecondary,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                        SizedBox(width: AppWidth.w4),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.pushNamed(
+                              context,
+                              AppRoutesNames.loginScreen,
+                            );
+                          },
+                          child: Text(
+                            AppStrings.login,
+                            style: TextStyle(
+                              fontSize: AppTextSize.textSize14,
+                              color: AppColor.primaryColor,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
+
+                  SizedBox(height: AppHeight.h40),
                 ],
               ),
             ),

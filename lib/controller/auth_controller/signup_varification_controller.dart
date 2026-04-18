@@ -21,6 +21,7 @@ class SignupVarificationControllerImpl extends SignupVarificationController {
   String verificationCode = '';
 
   RequestStatus requestStatus = RequestStatus.none;
+  String? errorMessage;
 
   late MyServices myServices;
   Map<String, dynamic>? userData;
@@ -117,24 +118,19 @@ class SignupVarificationControllerImpl extends SignupVarificationController {
   @override
   void onPressVerify() async {
     if (verificationCode.length < 6) {
-      Get.snackbar(
-        AppStrings.warning,
-        "Please enter the verification code.",
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      errorMessage = "Please enter the verification code.";
+      update();
       return;
     }
 
     if (verificationToken == null || verificationToken!.isEmpty) {
-      Get.snackbar(
-        AppStrings.warning,
-        "Verification token missing. Please sign up again.",
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      errorMessage = "Verification token missing. Please sign up again.";
+      update();
       return;
     }
 
     requestStatus = RequestStatus.loading;
+    errorMessage = null;
     update();
 
     final response = await varificationData.postVarificationCode(
@@ -168,21 +164,10 @@ class SignupVarificationControllerImpl extends SignupVarificationController {
       goToHomeScreen();
     } else {
       final error = response.$2;
-      final message = error is Map
-          ? error['message'] ?? "Verification failed"
+      errorMessage = error is Map
+          ? error['message']?.toString() ?? "Verification failed"
           : "Verification failed";
-      Get.defaultDialog(
-        title: AppStrings.warning,
-        content: Text(message),
-        backgroundColor: Colors.white,
-        titleStyle: const TextStyle(
-          color: Colors.black,
-          fontWeight: FontWeight.bold,
-        ),
-        barrierDismissible: false,
-        confirmTextColor: Colors.white,
-        onConfirm: () => Get.back(),
-      );
+      requestStatus = RequestStatus.none;
     }
     update();
   }
@@ -190,6 +175,7 @@ class SignupVarificationControllerImpl extends SignupVarificationController {
   @override
   void onCodeChanged(String code) {
     verificationCode = code;
+    if (errorMessage != null) errorMessage = null;
     update();
   }
 }

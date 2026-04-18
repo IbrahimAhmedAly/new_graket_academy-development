@@ -1,53 +1,63 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:flutter/material.dart';
 import 'package:new_graket_acadimy/core/constants/app_dimentions.dart';
 import 'package:new_graket_acadimy/core/constants/colors.dart';
 
 class CustomAuthButton extends StatelessWidget {
- final String name;
+  final String name;
   final void Function()? onTap;
+  final bool isLoading;
+
   const CustomAuthButton({
     super.key,
     required this.name,
     required this.onTap,
+    this.isLoading = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final bool disabled = onTap == null || isLoading;
+
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
+      onTap: disabled ? null : onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: double.infinity,
+        height: AppHeight.h56,
         alignment: Alignment.center,
-        height: AppHeight.h45,
-        width: AppWidth.w150,
         decoration: BoxDecoration(
-          color:onTap == null ? AppColor.gray : AppColor.buttonColor,
-          borderRadius: BorderRadius.circular(AppRadius.radius15),
-          boxShadow: [
-            BoxShadow(
-              color: AppColor.whiteColor.withOpacity(0.8),
-              offset: Offset(-2, -2),
-              blurRadius: 2,
-              spreadRadius: -2,
-            ),
-            BoxShadow(
-              color:AppColor. blackColor.withOpacity(0.2),
-              offset: Offset(5, 5),
-              blurRadius: 10,
-              spreadRadius: -5,
-            ),
-          ],
+          color: disabled
+              ? AppColor.primaryColor.withValues(alpha: 0.5)
+              : AppColor.primaryColor,
+          borderRadius: BorderRadius.circular(AppRadius.radius12),
+          boxShadow: disabled
+              ? null
+              : [
+                  BoxShadow(
+                    color: AppColor.primaryColor.withValues(alpha: 0.35),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
         ),
-        child: Center(
-          child: Text(
-            name,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-        ),
+        child: isLoading
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: Colors.white,
+                ),
+              )
+            : Text(
+                name,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  letterSpacing: 0.3,
+                ),
+              ),
       ),
     );
   }

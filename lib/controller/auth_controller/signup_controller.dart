@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:new_graket_acadimy/controller/Dialogs/Dialogs.dart';
 import 'package:new_graket_acadimy/core/constants/app_strings.dart';
 import 'package:new_graket_acadimy/core/services/services.dart';
 import 'package:new_graket_acadimy/routing/app_routes.dart';
@@ -26,9 +25,15 @@ class SignUpControllerImpl extends SignUpController {
   RequestStatus requestStatus = RequestStatus.none;
 
   Map<String, dynamic> signupDataMap = {};
+  String? errorMessage;
   TextEditingController fullNameTextEditingController = TextEditingController();
   TextEditingController emailTextEditingController = TextEditingController();
   TextEditingController passwordTextEditingController = TextEditingController();
+
+  bool get allFieldsFilled =>
+      fullNameTextEditingController.text.trim().isNotEmpty &&
+      emailTextEditingController.text.trim().isNotEmpty &&
+      passwordTextEditingController.text.isNotEmpty;
 
   String _stringValue(dynamic value) {
     if (value == null) return "";
@@ -62,12 +67,28 @@ class SignUpControllerImpl extends SignUpController {
         : Get.put(DataRequest(), permanent: true);
     signupData = SignUpData(dataRequest);
     serial = await getSerial();
+
+    fullNameTextEditingController.addListener(update);
+    emailTextEditingController.addListener(update);
+    passwordTextEditingController.addListener(update);
+
     super.onInit();
   }
 
   @override
+  void onClose() {
+    fullNameTextEditingController.removeListener(update);
+    emailTextEditingController.removeListener(update);
+    passwordTextEditingController.removeListener(update);
+    super.onClose();
+  }
+
+  @override
   void onPressSignUp() async {
-    print(serial);
+    requestStatus = RequestStatus.loading;
+    errorMessage = null;
+    update();
+
     var response = await signupData.postSignUpData(
       email: emailTextEditingController.text,
       password: passwordTextEditingController.text,
@@ -98,17 +119,10 @@ class SignUpControllerImpl extends SignUpController {
       );
     } else {
       final errorResponse = response.$2;
-      if (errorResponse is Map<String, dynamic>) {
-        showErrorDialog(
-          status: (requestStatus, errorResponse),
-        );
-      } else {
-        showErrorDialog(
-          status: (requestStatus, {
-            "message": "An error occurred",
-          }),
-        );
-      }
+      errorMessage = errorResponse is Map
+          ? errorResponse['message']?.toString() ?? "An error occurred"
+          : "An error occurred";
+      requestStatus = RequestStatus.none;
     }
     update();
   }
@@ -139,13 +153,7 @@ class SignUpControllerImpl extends SignUpController {
 
   @override
   void showErrorDialog({required (RequestStatus, Map<String, dynamic>) status}) {
-    Dialogs.showErrorDialog(
-      status: status.$1,
-      message: status.$2["message"]?.toString() ?? "An error occurred",
-      errorCode: null,
-      onRetry: () {
-        // Retry logic
-      },
-    );
+    errorMessage = status.$2["message"]?.toString() ?? "An error occurred";
+    update();
   }
 }

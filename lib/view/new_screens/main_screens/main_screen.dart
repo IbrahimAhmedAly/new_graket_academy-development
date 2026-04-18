@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:new_graket_acadimy/controller/home_controller/home_controller.dart';
 import 'package:new_graket_acadimy/controller/basket_controller.dart';
-import 'package:new_graket_acadimy/core/constants/assets_path.dart';
 import 'package:new_graket_acadimy/core/constants/colors.dart';
 import 'package:new_graket_acadimy/core/services/screen_security.dart';
 import 'package:new_graket_acadimy/view/new_screens/main_screens/basket_screen.dart';
@@ -14,18 +13,18 @@ import 'package:new_graket_acadimy/view/new_widgets/main_widgets/custom_navigati
 import 'package:new_graket_acadimy/view/new_widgets/main_widgets/custom_navigation_bar/MotionTabBarController.dart';
 
 class HomeMainScreen extends StatefulWidget {
- final int? routeInitialIndex;
+  final int? routeInitialIndex;
   const HomeMainScreen({super.key, this.routeInitialIndex});
 
   @override
   _HomeMainScreenState createState() => _HomeMainScreenState();
-
 }
 
-class _HomeMainScreenState extends State<HomeMainScreen> with TickerProviderStateMixin {
-  // TabController? _tabController;
+class _HomeMainScreenState extends State<HomeMainScreen>
+    with TickerProviderStateMixin {
   MotionTabBarController? _motionTabBarController;
   String _currentSelectedTab = "Home";
+
   @override
   void initState() {
     super.initState();
@@ -44,25 +43,18 @@ class _HomeMainScreenState extends State<HomeMainScreen> with TickerProviderStat
     _motionTabBarController!.dispose();
   }
 
-
-
   @override
   Widget build(BuildContext context) {
-    // Default selected tab
-    final int? data = widget.routeInitialIndex ?? ModalRoute
-        .of(context)!
-        .settings
-        .arguments as int?;
+    final int? data =
+        widget.routeInitialIndex ?? ModalRoute.of(context)!.settings.arguments as int?;
     if (data != null) {
-      // _motionTabBarController!.index =
-      //     data; // Set the initial index if provided
       _currentSelectedTab = data == 0
           ? "My Courses"
           : data == 1
-          ? "Basket"
-          : data == 2
-          ? "Home"
-          : "Profile";
+              ? "Basket"
+              : data == 2
+                  ? "Home"
+                  : "Profile";
     }
     return GetBuilder<HomeController>(
       assignId: true,
@@ -74,7 +66,7 @@ class _HomeMainScreenState extends State<HomeMainScreen> with TickerProviderStat
           builder: (basketController) {
             final badge = _buildBasketBadge(basketController.basketCount);
             return Scaffold(
-              backgroundColor: Colors.white,
+              backgroundColor: AppColor.scaffoldBg,
               extendBody: true,
               extendBodyBehindAppBar: true,
               bottomNavigationBar: MotionTabBar(
@@ -85,21 +77,21 @@ class _HomeMainScreenState extends State<HomeMainScreen> with TickerProviderStat
                 icons: const [
                   Icons.cases_outlined,
                   Icons.shopping_basket_outlined,
-                  Icons.home,
-                  Icons.person_outline,
+                  Icons.home_rounded,
+                  Icons.person_outline_rounded,
                 ],
                 badges: [null, badge, null, null],
                 tabSize: 60,
                 tabBarHeight: 55,
-                textStyle: const TextStyle(
+                textStyle: TextStyle(
                   fontSize: 12,
-                  color: AppColor.mainScreenButtons,
-                  fontWeight: FontWeight.bold,
+                  color: AppColor.primaryColor,
+                  fontWeight: FontWeight.w600,
                 ),
-                tabIconColor: AppColor.mainScreenButtons,
+                tabIconColor: AppColor.primaryColor.withValues(alpha: 0.5),
                 tabIconSize: 25.0,
-                tabIconSelectedSize: 50.0,
-                tabSelectedColor: AppColor.mainScreenButtons,
+                tabIconSelectedSize: 26.0,
+                tabSelectedColor: AppColor.primaryColor,
                 tabIconSelectedColor: Colors.white,
                 tabBarColor: Colors.white,
                 onTabItemSelected: (int value) {
@@ -108,21 +100,7 @@ class _HomeMainScreenState extends State<HomeMainScreen> with TickerProviderStat
                   });
                 },
               ),
-              body: Container(
-                alignment: Alignment.topCenter,
-                width: double.maxFinite,
-                height: double.maxFinite,
-                decoration: BoxDecoration(
-                  image: DecorationImage(
-                      fit: BoxFit.fill,
-                      image: AssetImage(
-                        AssetsPath.mainScreen,
-                      )),
-                ),
-                child: Container(
-                  child: buildTabContent(_motionTabBarController!.index),
-                ),
-              ),
+              body: buildTabContent(_motionTabBarController!.index),
             );
           },
         );
@@ -135,7 +113,7 @@ class _HomeMainScreenState extends State<HomeMainScreen> with TickerProviderStat
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: Colors.redAccent,
+        color: AppColor.errorColor,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(

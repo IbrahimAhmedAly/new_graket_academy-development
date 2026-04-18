@@ -16,113 +16,189 @@ class OnboardScreen extends StatefulWidget {
   State<OnboardScreen> createState() => _OnboardScreenState();
 }
 
-
 class _OnboardScreenState extends State<OnboardScreen> {
   late MyServices myServices;
-  @override
-  void initState() {
-   myServices = Get.find();
-    super.initState();
-  }
-
-
   final PageController _controller = PageController();
   int index = 0;
+
+  final List<Map<String, String>> _pages = [
+    {
+      'title': 'Learn Anywhere,\nAnytime',
+      'subtitle': 'Access hundreds of courses from top instructors right from your pocket.',
+    },
+    {
+      'title': 'Expert-Led\nCourses',
+      'subtitle': 'Learn from industry professionals with real-world experience.',
+    },
+    {
+      'title': 'Track Your\nProgress',
+      'subtitle': 'Stay motivated with certificates and progress tracking as you grow.',
+    },
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    myServices = Get.find();
+  }
+
+  void _finish() {
+    myServices.sharedPreferences.setBool(AppSharedPrefKeys.firstTimeKey, false);
+    Navigator.pushNamedAndRemoveUntil(
+        context, AppRoutesNames.welcomeScreen, (route) => false);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: null,
-      backgroundColor: AppColor.backgroundColor,
+      backgroundColor: AppColor.scaffoldBg,
       body: Column(
         children: [
+          // ── Image area (top 60%) ──
           Expanded(
-            child: PageView(
+            flex: 60,
+            child: PageView.builder(
               controller: _controller,
-              onPageChanged: (value) {
-                setState(() {
-                  index = value;
-                });
+              onPageChanged: (value) => setState(() => index = value),
+              itemCount: _pages.length,
+              itemBuilder: (context, i) {
+                final images = [
+                  AssetsPath.onboarding_1,
+                  AssetsPath.onboarding_2,
+                  AssetsPath.onboarding_3,
+                ];
+                return OnboardPage(imagePath: images[i]);
               },
-              children: [
-                OnboardPage(imagePath: AssetsPath.onboarding_1),
-                OnboardPage(imagePath: AssetsPath.onboarding_2),
-                OnboardPage(imagePath: AssetsPath.onboarding_3),
-              ],
             ),
           ),
-          Padding(
-            padding: EdgeInsets.symmetric(
-                horizontal: AppPadding.pad20, vertical: AppPadding.pad40),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+
+          // ── Bottom content area ──
+          Container(
+            width: double.infinity,
+            color: AppColor.scaffoldBg,
+            padding: EdgeInsets.fromLTRB(
+              AppPadding.pad24,
+              AppPadding.pad24,
+              AppPadding.pad24,
+              MediaQuery.of(context).padding.bottom + AppPadding.pad24,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                InkWell(
-                  onTap: () {
-                    myServices.sharedPreferences.setBool(AppSharedPrefKeys.firstTimeKey, false);
-                    Navigator.pushNamedAndRemoveUntil(context,
-                        AppRoutesNames.welcomeScreen, (route) => false);
-                  },
-                  child: Text(
-                    AppStrings.skip,
-                    style: TextStyle(
-                      decoration: TextDecoration.underline,
-                      fontSize: AppTextSize.textSize18,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.black,
-                    ),
-                  ),
-                ),
+                // ── Dots ──
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CustomIndecator(isActive: index == 0),
-                    SizedBox(width: AppWidth.sizeBox),
-                    CustomIndecator(isActive: index == 1),
-                    SizedBox(width: AppWidth.sizeBox),
-                    CustomIndecator(isActive: index == 2),
-                  ],
-                ),
-                InkWell(
-                  borderRadius: BorderRadius.circular(AppRadius.radius40),
-                  onTap: () {
-                    if (index == 2) {
-                      myServices.sharedPreferences.setBool(AppSharedPrefKeys.firstTimeKey, false);
-                      Navigator.pushNamedAndRemoveUntil(context,
-                          AppRoutesNames.welcomeScreen, (route) => false);
-                    }
-                    _controller.animateToPage(
-                      index + 1,
-                      duration: Duration(milliseconds: 300),
-                      curve: Curves.ease,
+                  children: List.generate(_pages.length, (i) {
+                    return Padding(
+                      padding: EdgeInsets.only(right: AppPadding.pad8),
+                      child: CustomIndecator(isActive: i == index),
                     );
-                  },
-                  child: Container(
-                    padding: EdgeInsets.all(15),
-                    decoration: BoxDecoration(
-                      color: AppColor.buttonColor,
-                      borderRadius: BorderRadius.circular(AppRadius.radius40),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.5),
-                          spreadRadius: 2,
-                          blurRadius: 5,
-                          offset: Offset(0, 3), // changes position of shadow
-                        ),
-                      ],
+                  }),
+                ),
+
+                SizedBox(height: AppHeight.h20),
+
+                // ── Title ──
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  child: Text(
+                    _pages[index]['title']!,
+                    key: ValueKey(index),
+                    style: TextStyle(
+                      fontSize: AppTextSize.textSize24,
+                      fontWeight: FontWeight.w800,
+                      color: AppColor.textPrimary,
+                      height: 1.25,
+                      letterSpacing: -0.5,
                     ),
-                    child: index != 2
-                        ? Icon(Icons.arrow_forward_ios,
-                            color: AppColor.buttonTextColor, size: AppRadius.radius24)
-                        : Text(
-                            textAlign: TextAlign.center,
-                            AppStrings.start,
-                            style: TextStyle(
-                              fontSize: AppTextSize.textSize16,
-                              fontWeight: FontWeight.bold,
-                              color: AppColor.buttonTextColor,
-                            ),
-                          ),
                   ),
+                ),
+
+                SizedBox(height: AppHeight.h8),
+
+                // ── Subtitle ──
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  child: Text(
+                    _pages[index]['subtitle']!,
+                    key: ValueKey('sub_$index'),
+                    style: TextStyle(
+                      fontSize: AppTextSize.textSize14,
+                      fontWeight: FontWeight.w400,
+                      color: AppColor.textSecondary,
+                      height: 1.5,
+                    ),
+                  ),
+                ),
+
+                SizedBox(height: AppHeight.h28),
+
+                // ── Navigation row ──
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Skip button
+                    GestureDetector(
+                      onTap: _finish,
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: AppPadding.pad8),
+                        child: Text(
+                          AppStrings.skip,
+                          style: TextStyle(
+                            fontSize: AppTextSize.textSize14,
+                            fontWeight: FontWeight.w500,
+                            color: AppColor.textHint,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Next / Start button
+                    GestureDetector(
+                      onTap: () {
+                        if (index == _pages.length - 1) {
+                          _finish();
+                        } else {
+                          _controller.animateToPage(
+                            index + 1,
+                            duration: const Duration(milliseconds: 350),
+                            curve: Curves.easeInOut,
+                          );
+                        }
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        height: AppHeight.h48,
+                        width: index == _pages.length - 1 ? 130 : AppHeight.h48,
+                        decoration: BoxDecoration(
+                          color: AppColor.primaryColor,
+                          borderRadius: BorderRadius.circular(AppRadius.radius25),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColor.primaryColor.withValues(alpha: 0.35),
+                              blurRadius: 16,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: index == _pages.length - 1
+                              ? Text(
+                                  AppStrings.start,
+                                  style: TextStyle(
+                                    fontSize: AppTextSize.textSize15,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.arrow_forward_rounded,
+                                  color: Colors.white,
+                                  size: 22,
+                                ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

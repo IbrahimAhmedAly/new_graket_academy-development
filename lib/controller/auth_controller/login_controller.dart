@@ -22,7 +22,7 @@ class LoginControllerImpl extends LoginController {
   TextEditingController emailTextEditingController = TextEditingController();
   TextEditingController passwordTextEditingController = TextEditingController();
 
-  RequestStatus requestStatus = RequestStatus.loading;
+  RequestStatus requestStatus = RequestStatus.none;
 
   late MyServices myServices;
   String? serial;
@@ -30,6 +30,9 @@ class LoginControllerImpl extends LoginController {
 
   /// remember me flag
   bool rememberMe = true;
+
+  /// inline error message shown below the button
+  String? errorMessage;
 
   late LoginData loginData;
 
@@ -182,6 +185,10 @@ class LoginControllerImpl extends LoginController {
   void onPressLogin() async {
     appPrint(serial);
 
+    requestStatus = RequestStatus.loading;
+    errorMessage = null;
+    update();
+
     var response = await loginData.postLoginData(
       email: emailTextEditingController.text,
       password: passwordTextEditingController.text,
@@ -273,20 +280,9 @@ class LoginControllerImpl extends LoginController {
       final error = response.$2;
       final message =
           error is Map ? error['message'] ?? "Unknown Error" : "Unknown Error";
-      Get.defaultDialog(
-        title: AppStrings.warning,
-        content: Text(message),
-        backgroundColor: Colors.white,
-        titleStyle: const TextStyle(
-          color: Colors.black,
-          fontWeight: FontWeight.bold,
-        ),
-        barrierDismissible: false,
-        confirmTextColor: Colors.white,
-        onConfirm: () {
-          Get.back();
-        },
-      );
+      requestStatus = RequestStatus.none;
+      errorMessage = message;
+      update();
     }
   }
 

@@ -2,22 +2,32 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class AppHeight {
   static double h3 = 3.h;
+  static double h4 = 4.h;
+  static double h6 = 6.h;
+  static double h8 = 8.h;
   static double h10 = 10.h;
   static double h12 = 12.h;
+  static double h16 = 16.h;
   static double h20 = 20.h;
   static double authButton = 25.h;
   static double h24 = 24.h;
   static double h25 = 25.h;
+  static double h28 = 28.h;
   static double h32 = 32.h;
   static double h35 = 35.h;
   static double h40 = 40.h;
+  static double h44 = 44.h;
   static double h45 = 45.h;
+  static double h48 = 48.h;
   static double h50 = 50.h;
+  static double h56 = 56.h;
   static double h60 = 60.h;
   static double h65 = 65.h;
+  static double h70 = 70.h;
   static double h80 = 80.h;
   static double h82 = 82.h;
   static double h90 = 90.h;
+  static double h100 = 100.h;
   static double h120 = 120.h;
   static double h124 = 124.h;
   static double h150 = 150.h;
@@ -40,10 +50,15 @@ class AppHeight {
 
 class AppWidth {
   static double w1 = 1.w;
+  static double w2 = 2.w;
+  static double w4 = 4.w;
   static double sizeBox = 6.w;
+  static double w8 = 8.w;
   static double authButton = 200.w;
   static double homeTapButton = 100.w;
   static double w5 = 5.w;
+  static double w12 = 12.w;
+  static double w16 = 16.w;
   static double w18 = 18.w;
   static double w10 = 10.w;
   static double w20 = 20.w;
@@ -69,12 +84,15 @@ class AppWidth {
 }
 
 class AppPadding {
+  static double pad4 = 4.r;
   static double pad6 = 6.r;
   static double pad8 = 8.r;
   static double pad10 = 10.r;
   static double pad12 = 12.r;
   static double pad15 = 15.r;
+  static double pad16 = 16.r;
   static double pad20 = 20.r;
+  static double pad24 = 24.r;
   static double pad25 = 25.r;
   static double pad30 = 30.r;
   static double pad40 = 40.r;

@@ -1,11 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:new_graket_acadimy/core/constants/app_dimentions.dart';
-import 'package:new_graket_acadimy/core/constants/app_strings.dart';
 import 'package:new_graket_acadimy/core/constants/colors.dart';
-import 'package:new_graket_acadimy/core/constants/assets_path.dart';
-import 'package:new_graket_acadimy/routing/app_routes.dart';
-import 'package:new_graket_acadimy/routing/extention.dart';
+import 'package:new_graket_acadimy/core/constants/image_assets.dart';
 
 class BasketItem extends StatelessWidget {
   final String courseName;
@@ -13,17 +10,16 @@ class BasketItem extends StatelessWidget {
   final double price;
   final double rate;
   final String totalTime;
-  void Function()? onTapBuy;
-  void Function()? onTapExplor;
-  void Function()? onRemove;
-  BasketItem({
+  final void Function()? onTapExplor;
+  final void Function()? onRemove;
+
+  const BasketItem({
     super.key,
     required this.courseName,
     required this.courseImage,
     required this.price,
     required this.rate,
     required this.totalTime,
-    this.onTapBuy,
     this.onTapExplor,
     this.onRemove,
   });
@@ -36,226 +32,155 @@ class BasketItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: AppPadding.pad10),
-      child: GestureDetector(
-        onTap: onTapExplor,
-        behavior: HitTestBehavior.opaque,
-        child: Container(
-          width: AppWidth.w305,
-          height: AppHeight.h124,
-          child: Stack(
-            alignment: Alignment.topLeft,
-            children: [
-              Container(
-                width: AppWidth.w300,
-                height: AppHeight.h120,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(AppRadius.radius10),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.5),
-                      spreadRadius: 2,
-                      blurRadius: 5,
-                      offset: Offset(0, 3), // changes position of shadow
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(AppRadius.radius10),
-                  child: _isNetworkImage(courseImage)
-                      ? CachedNetworkImage(
-                          imageUrl: courseImage,
-                          fit: BoxFit.fill,
-                          errorWidget: (context, url, error) => Image.asset(
-                            AssetsPath.courseImage_1,
-                            fit: BoxFit.fill,
+    return GestureDetector(
+      onTap: onTapExplor,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        margin: EdgeInsets.only(bottom: AppPadding.pad12),
+        padding: EdgeInsets.all(AppPadding.pad12),
+        decoration: BoxDecoration(
+          color: AppColor.cardBg,
+          borderRadius: BorderRadius.circular(AppRadius.radius15),
+          boxShadow: [
+            BoxShadow(
+              color: AppColor.primaryColor.withValues(alpha: 0.06),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Thumbnail ──
+            ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.radius12),
+              child: SizedBox(
+                width: 80,
+                height: 80,
+                child: _isNetworkImage(courseImage)
+                    ? CachedNetworkImage(
+                        imageUrl: courseImage,
+                        fit: BoxFit.cover,
+                        placeholder: (_, __) => Container(
+                          color: AppColor.primaryLight,
+                          child: const Center(
+                            child: SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColor.primaryColor,
+                              ),
+                            ),
                           ),
-                        )
-                      : Image.asset(
-                          courseImage,
-                          fit: BoxFit.fill,
                         ),
-                ),
-              ),
-              Container(
-                width: AppWidth.w300,
-                height: AppHeight.h120,
-                decoration: BoxDecoration(
-                  color: AppColor.blackColor.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(
-                    AppRadius.radius10,
-                  ),
-                ),
-              ),
-              Padding(
-                padding: EdgeInsets.only(
-                  left: AppPadding.pad6,
-                ),
-                child: Container(
-                  width: AppWidth.w39,
-                  height: AppHeight.h20,
-                  decoration: BoxDecoration(
-                    color: AppColor.whiteColor,
-                    borderRadius: BorderRadius.only(
-                      bottomLeft: Radius.circular(AppRadius.radius10),
-                      topRight: Radius.circular(AppRadius.radius10),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.star,
-                        color: AppColor.starColor,
-                        size: AppRadius.radius10,
-                      ),
-                      SizedBox(
-                        width: AppWidth.sizeBox,
-                      ),
-                      Text(
-                        "$rate",
-                        style: TextStyle(
-                          fontSize: AppTextSize.textSize10,
-                          fontWeight: FontWeight.bold,
-                          color: AppColor.blackColor,
+                        errorWidget: (_, __, ___) => Image.asset(
+                          AppImageAssets.courseErrorImage,
+                          fit: BoxFit.cover,
                         ),
-                      ),
-                    ],
-                  ),
-                ),
+                      )
+                    : Image.asset(courseImage, fit: BoxFit.cover),
               ),
-              Container(
-                width: AppWidth.w300,
-                height: AppHeight.h120,
-                alignment: Alignment.topRight,
-                child: Padding(
-                  padding: EdgeInsets.all(AppPadding.pad10),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Icon(
-                        Icons.av_timer_rounded,
-                        color: AppColor.whiteColor,
-                        size: AppRadius.radius15,
-                      ),
-                      SizedBox(
-                        width: AppWidth.sizeBox,
-                      ),
-                      Text(
-                        totalTime,
-                        style: TextStyle(
-                          fontSize: AppTextSize.textSize10,
-                          fontWeight: FontWeight.normal,
-                          color: AppColor.whiteColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              if (onRemove != null)
-                Positioned(
-                  top: AppPadding.pad6,
-                  left: AppPadding.pad6,
-                  child: GestureDetector(
-                    onTap: onRemove,
-                    child: Container(
-                      width: AppHeight.h20,
-                      height: AppHeight.h20,
-                      decoration: BoxDecoration(
-                        color: Colors.redAccent,
-                        borderRadius: BorderRadius.circular(AppRadius.radius20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 4,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        Icons.close,
-                        size: AppRadius.radius15,
-                        color: AppColor.whiteColor,
-                      ),
-                    ),
-                  ),
-                ),
-              Container(
-                width: AppWidth.w300,
-                height: AppHeight.h120,
-                alignment: Alignment.bottomRight,
-                child: Container(
-                  width: AppWidth.w262,
-                  height: AppHeight.h50,
-                  child: Text(
-                    softWrap: true,
-                    textAlign: TextAlign.left,
-                    courseName,
-                    style: TextStyle(
-                      fontSize: AppTextSize.textSize16,
-                      fontWeight: FontWeight.bold,
-                      color: AppColor.whiteColor,
-                    ),
-                  ),
-                ),
-              ),
-              Container(
-                width: AppWidth.w305,
-                height: AppHeight.h124,
-                alignment: Alignment.bottomRight,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+            ),
+
+            SizedBox(width: AppWidth.w12),
+
+            // ── Info ──
+            Expanded(
+              child: SizedBox(
+                height: 80,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Padding(
-                      padding: EdgeInsets.only(bottom: AppPadding.pad10),
-                      child: Text(
-                        "$price \$",
-                        style: TextStyle(
-                          fontSize: AppTextSize.textSize14,
-                          fontWeight: FontWeight.normal,
+                    // Title
+                    Text(
+                      courseName,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: AppTextSize.textSize14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColor.textPrimary,
+                        height: 1.3,
+                      ),
+                    ),
+                    // Meta row
+                    Row(
+                      children: [
+                        // Rating
+                        Icon(
+                          Icons.star_rounded,
+                          size: 14,
                           color: AppColor.starColor,
                         ),
-                      ),
-                    ),
-                    SizedBox(
-                      width: AppWidth.sizeBox,
-                    ),
-                    GestureDetector(
-                      onTap: onTapBuy ??
-                          () {
-                            context.pushNamed(AppRoutesNames.paymentWayScreen);
-                          },
-                      child: Container(
-                        width: AppWidth.w57,
-                        height: AppHeight.h24,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: AppColor.savedIconColor,
-                          borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(AppRadius.radius10),
-                            topRight: Radius.circular(AppRadius.radius10),
-                            bottomLeft: Radius.circular(AppRadius.radius10),
-                          ),
-                        ),
-                        child: Text(
-                          AppStrings.buyNow,
+                        SizedBox(width: AppWidth.w2),
+                        Text(
+                          rate.toStringAsFixed(1),
                           style: TextStyle(
-                            fontSize: AppTextSize.textSize10,
-                            fontWeight: FontWeight.bold,
-                            color: AppColor.whiteColor,
+                            fontSize: AppTextSize.textSize12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColor.textPrimary,
                           ),
                         ),
-                      ),
+                        SizedBox(width: AppWidth.w8),
+                        // Duration
+                        Icon(
+                          Icons.access_time_rounded,
+                          size: 13,
+                          color: AppColor.textHint,
+                        ),
+                        SizedBox(width: AppWidth.w2),
+                        Text(
+                          totalTime,
+                          style: TextStyle(
+                            fontSize: AppTextSize.textSize12,
+                            fontWeight: FontWeight.w400,
+                            color: AppColor.textSecondary,
+                          ),
+                        ),
+                        const Spacer(),
+                        // Price
+                        Text(
+                          "${price.toStringAsFixed(0)} EGP",
+                          style: TextStyle(
+                            fontSize: AppTextSize.textSize15,
+                            fontWeight: FontWeight.w700,
+                            color: AppColor.priceColor,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
+                ),
+              ),
+            ),
+
+            // ── Remove button ──
+            if (onRemove != null)
+              GestureDetector(
+                onTap: onRemove,
+                child: Padding(
+                  padding: EdgeInsets.only(left: AppPadding.pad4),
+                  child: Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: AppColor.errorColor.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 16,
+                      color: AppColor.errorColor,
+                    ),
+                  ),
                 ),
               ),
           ],
         ),
       ),
-    )
     );
   }
 }

@@ -6,52 +6,63 @@ class Profileelement extends StatelessWidget {
   final String elementName;
   final IconData icon;
   final Color iconColor;
-  void Function()? onTap;
-  Profileelement(
-      {super.key,
-      required this.elementName,
-      required this.icon,
-      required this.iconColor,
-      this.onTap});
+  final void Function()? onTap;
+  final bool isDestructive;
+
+  const Profileelement({
+    super.key,
+    required this.elementName,
+    required this.icon,
+    required this.iconColor,
+    this.onTap,
+    this.isDestructive = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: AppHeight.h3),
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          width: AppWidth.w310,
-          height: AppHeight.h35,
-          decoration: BoxDecoration(
-            color: AppColor.whiteColor.withOpacity(0.5),
-            borderRadius: BorderRadius.circular(AppRadius.radius10),
-            border: Border.all(
-              color:AppColor. mainScreenButtons,
-              width: 2.0,
-            ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: AppPadding.pad10),
-                child: Icon(
-                  icon,
-                  color: iconColor,
-                  size: AppRadius.radius30,
-                ),
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: AppPadding.pad12),
+        child: Row(
+          children: [
+            // ── Icon container ──
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: isDestructive
+                    ? AppColor.errorColor.withValues(alpha: 0.1)
+                    : iconColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(AppRadius.radius12),
               ),
-              Text(
+              child: Icon(
+                icon,
+                color: isDestructive ? AppColor.errorColor : iconColor,
+                size: 20,
+              ),
+            ),
+            SizedBox(width: AppWidth.w12),
+            // ── Label ──
+            Expanded(
+              child: Text(
                 elementName,
                 style: TextStyle(
                   fontSize: AppTextSize.textSize15,
-                  fontWeight: FontWeight.bold,
-                  color: AppColor.blackColor,
+                  fontWeight: FontWeight.w500,
+                  color: isDestructive ? AppColor.errorColor : AppColor.textPrimary,
                 ),
               ),
-            ],
-          ),
+            ),
+            // ── Chevron ──
+            if (!isDestructive)
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 14,
+                color: AppColor.textHint,
+              ),
+          ],
         ),
       ),
     );

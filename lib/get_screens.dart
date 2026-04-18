@@ -11,6 +11,7 @@ import 'package:new_graket_acadimy/view/new_screens/main_screens/main_screen.dar
 import 'package:new_graket_acadimy/view/new_screens/onboarding/onboard_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/other/courses_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/other/enter_code_screen.dart';
+import 'package:new_graket_acadimy/view/new_screens/other/notifications_screen.dart';
 
 import 'core/middleware/app_middleware.dart';
 
@@ -64,4 +65,9 @@ List<GetPage<dynamic>> getScreens = [
       page: () => HomeMainScreen(routeInitialIndex: 0),
       transition: Transition.fadeIn,
       transitionDuration: const Duration(milliseconds: 700)),
+  GetPage(
+      name: AppRoutesNames.notificationsScreen,
+      page: () => const NotificationsScreen(),
+      transition: Transition.fadeIn,
+      transitionDuration: const Duration(milliseconds: 300)),
 ];
