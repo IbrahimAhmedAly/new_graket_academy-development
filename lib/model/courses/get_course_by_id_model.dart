@@ -58,6 +58,55 @@ class GetCourseByIdData {
   Map<String, dynamic> toJson() => {"message": message, "data": data?.toJson()};
 }
 
+enum PurchaseType { course, video, none }
+
+class PurchaseInfo {
+  bool isPurchased;
+  PurchaseType purchaseType;
+  List<String> purchasedVideoIds;
+
+  PurchaseInfo({
+    required this.isPurchased,
+    this.purchaseType = PurchaseType.none,
+    this.purchasedVideoIds = const [],
+  });
+
+  factory PurchaseInfo.fromJson(Map<String, dynamic> json) {
+    final purchased = json["isPurchased"] == true;
+    if (!purchased) {
+      return PurchaseInfo(isPurchased: false);
+    }
+    final typeStr = (json["purchaseType"] as String? ?? "").toUpperCase();
+    final type = typeStr == "COURSE"
+        ? PurchaseType.course
+        : typeStr == "VIDEO"
+            ? PurchaseType.video
+            : PurchaseType.none;
+    final ids = json["purchasedVideoIds"] == null
+        ? <String>[]
+        : List<String>.from(json["purchasedVideoIds"].map((x) => x.toString()));
+    return PurchaseInfo(
+      isPurchased: true,
+      purchaseType: type,
+      purchasedVideoIds: ids,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    "isPurchased": isPurchased,
+    "purchaseType": purchaseType.name.toUpperCase(),
+    "purchasedVideoIds": purchasedVideoIds,
+  };
+
+  bool get hasFullAccess => isPurchased && purchaseType == PurchaseType.course;
+
+  bool hasVideoAccess(String contentId) =>
+      hasFullAccess ||
+      (isPurchased &&
+          purchaseType == PurchaseType.video &&
+          purchasedVideoIds.contains(contentId));
+}
+
 class DataData {
   String? id;
   String? title;
@@ -80,6 +129,7 @@ class DataData {
   List<Review>? reviews;
   double? averageRating;
   int? totalReviews;
+  PurchaseInfo? purchaseInfo;
 
   DataData({
     this.id,
@@ -103,6 +153,7 @@ class DataData {
     this.reviews,
     this.averageRating,
     this.totalReviews,
+    this.purchaseInfo,
   });
 
   factory DataData.fromJson(Map<String, dynamic> json) => DataData(
@@ -139,6 +190,9 @@ class DataData {
         : List<Review>.from(json["reviews"]!.map((x) => Review.fromJson(x))),
     averageRating: json["averageRating"]?.toDouble(),
     totalReviews: json["totalReviews"],
+    purchaseInfo: json["purchaseInfo"] == null
+        ? null
+        : PurchaseInfo.fromJson(json["purchaseInfo"]),
   );
 
   Map<String, dynamic> toJson() => {
@@ -167,6 +221,7 @@ class DataData {
         : List<dynamic>.from(reviews!.map((x) => x.toJson())),
     "averageRating": averageRating,
     "totalReviews": totalReviews,
+    "purchaseInfo": purchaseInfo?.toJson(),
   };
 }
 
@@ -323,8 +378,20 @@ class Content {
   String? type;
   int? order;
   int? duration;
+  bool? hasAccess;
+  String? videoUrl;
+  String? pdfUrl;
 
-  Content({this.id, this.title, this.type, this.order, this.duration});
+  Content({
+    this.id,
+    this.title,
+    this.type,
+    this.order,
+    this.duration,
+    this.hasAccess,
+    this.videoUrl,
+    this.pdfUrl,
+  });
 
   factory Content.fromJson(Map<String, dynamic> json) => Content(
     id: json["id"],
@@ -332,6 +399,9 @@ class Content {
     type: json["type"],
     order: json["order"],
     duration: json["duration"],
+    hasAccess: json["hasAccess"],
+    videoUrl: json["videoUrl"],
+    pdfUrl: json["pdfUrl"],
   );
 
   Map<String, dynamic> toJson() => {
@@ -340,5 +410,8 @@ class Content {
     "type": type,
     "order": order,
     "duration": duration,
+    "hasAccess": hasAccess,
+    "videoUrl": videoUrl,
+    "pdfUrl": pdfUrl,
   };
 }

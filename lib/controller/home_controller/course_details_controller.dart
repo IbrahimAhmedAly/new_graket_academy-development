@@ -1,4 +1,3 @@
-
 import 'package:get/get.dart';
 import 'package:new_graket_acadimy/core/class/request_status.dart';
 import 'package:new_graket_acadimy/core/constants/app_strings.dart';
@@ -20,11 +19,31 @@ class CourseDetailsControllerImp extends CourseDetailsController {
   late YoutubePlayerController _playerController;
   MyServices myServices = Get.find();
   String userToken = "";
-  String courseId = "" ;
+  String courseId = "";
   DataData? courseDetails;
   RequestStatus requestStatus = RequestStatus.loading;
   bool isSubscriber = false;
   String previewVideoUrl = "";
+
+  // Purchase state derived from purchaseInfo
+  bool get isPurchased => courseDetails?.purchaseInfo?.isPurchased == true;
+  bool get hasFullAccess =>
+      courseDetails?.purchaseInfo?.hasFullAccess == true;
+  PurchaseType get purchaseType =>
+      courseDetails?.purchaseInfo?.purchaseType ?? PurchaseType.none;
+
+  bool contentHasAccess(Content content) {
+    final info = courseDetails?.purchaseInfo;
+    if (info == null) return false;
+    if (info.hasFullAccess) return true;
+    if (content.hasAccess == true) return true;
+    if (info.purchaseType == PurchaseType.video &&
+        content.id != null &&
+        info.purchasedVideoIds.contains(content.id)) {
+      return true;
+    }
+    return false;
+  }
   @override
   void onInit() {
     final args = Get.arguments;
@@ -114,6 +133,17 @@ class CourseDetailsControllerImp extends CourseDetailsController {
             dataMap['promoVideo'] ??
             dataMap['introVideoUrl'],
       );
+
+      // If purchaseInfo wasn't parsed by the model (e.g. fallback parse path),
+      // try to hydrate it from the raw map.
+      if (courseDetails != null && courseDetails!.purchaseInfo == null) {
+        final piRaw = dataMap['purchaseInfo'];
+        if (piRaw is Map<String, dynamic>) {
+          try {
+            courseDetails!.purchaseInfo = PurchaseInfo.fromJson(piRaw);
+          } catch (_) {}
+        }
+      }
     } else {
       courseDetails = null;
     }
