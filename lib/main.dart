@@ -65,6 +65,19 @@ class MyApp extends StatelessWidget {
             fontFamily: 'Arb',
             scaffoldBackgroundColor: const Color(0xFFF5F3F8),
           ),
+          darkTheme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: const Color(0xFF7C5CBF),
+              brightness: Brightness.dark,
+            ),
+            useMaterial3: true,
+            bottomSheetTheme: const BottomSheetThemeData(
+              backgroundColor: Colors.transparent,
+            ),
+            fontFamily: 'Arb',
+            scaffoldBackgroundColor: const Color(0xFF121014),
+          ),
+          themeMode: ThemeMode.system,
           // routes: routes,
           initialRoute: AppRoutesNames.initialRoute,
         );

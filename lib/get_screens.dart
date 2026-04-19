@@ -5,13 +5,16 @@ import 'package:new_graket_acadimy/view/new_screens/auth/login_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/auth/sign_up_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/auth/varification_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/auth/welcome_screen.dart';
+import 'package:new_graket_acadimy/view/new_screens/course_player/course_player_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/explore_cource/explore_course_screen.dart';
+import 'package:new_graket_acadimy/view/new_screens/instructor/instructor_profile_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/main_screens/home_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/main_screens/main_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/onboarding/onboard_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/other/courses_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/other/enter_code_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/other/notifications_screen.dart';
+import 'package:new_graket_acadimy/view/new_screens/quiz/quiz_screen.dart';
 
 import 'core/middleware/app_middleware.dart';
 
@@ -70,4 +73,19 @@ List<GetPage<dynamic>> getScreens = [
       page: () => const NotificationsScreen(),
       transition: Transition.fadeIn,
       transitionDuration: const Duration(milliseconds: 300)),
+  GetPage(
+      name: AppRoutesNames.coursePlayerScreen,
+      page: () => const CoursePlayerScreen(),
+      transition: Transition.rightToLeft,
+      transitionDuration: const Duration(milliseconds: 400)),
+  GetPage(
+      name: AppRoutesNames.quizScreen,
+      page: () => const QuizScreen(),
+      transition: Transition.downToUp,
+      transitionDuration: const Duration(milliseconds: 350)),
+  GetPage(
+      name: AppRoutesNames.instructorProfileScreen,
+      page: () => const InstructorProfileScreen(),
+      transition: Transition.rightToLeft,
+      transitionDuration: const Duration(milliseconds: 350)),
 ];

@@ -44,11 +44,29 @@ class GetMyCoursesModelData {
 
   GetMyCoursesModelData({this.message, this.data});
 
-  factory GetMyCoursesModelData.fromJson(Map<String, dynamic> json) =>
-      GetMyCoursesModelData(
-        message: json["message"],
-        data: json["data"] == null ? null : DataData.fromJson(json["data"]),
-      );
+  /// The API returns either:
+  ///   (A) { message, data: { data: [...], metadata: {...} } }   — wrapped
+  ///   (B) { message, data: [...], metadata: {...} }             — flat
+  ///
+  /// Both are handled here so the parser works regardless.
+  factory GetMyCoursesModelData.fromJson(Map<String, dynamic> json) {
+    final rawData = json["data"];
+    DataData? parsed;
+    if (rawData is Map<String, dynamic>) {
+      // Shape A: the middle wrapper exists
+      parsed = DataData.fromJson(rawData);
+    } else if (rawData is List) {
+      // Shape B: items sit at the same level as metadata
+      parsed = DataData.fromJson({
+        "data": rawData,
+        "metadata": json["metadata"],
+      });
+    }
+    return GetMyCoursesModelData(
+      message: json["message"],
+      data: parsed,
+    );
+  }
 
   Map<String, dynamic> toJson() => {"message": message, "data": data?.toJson()};
 }

@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:new_graket_acadimy/controller/home_controller/home_controller.dart';
-import 'package:new_graket_acadimy/controller/basket_controller.dart';
+import 'package:new_graket_acadimy/controller/wishlist_controller.dart';
 import 'package:new_graket_acadimy/core/constants/colors.dart';
 import 'package:new_graket_acadimy/core/services/screen_security.dart';
-import 'package:new_graket_acadimy/view/new_screens/main_screens/basket_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/main_screens/home_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/main_screens/my_course_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/main_screens/profile.dart'
     show Profile;
+import 'package:new_graket_acadimy/view/new_screens/main_screens/wishlist_screen.dart';
 import 'package:new_graket_acadimy/view/new_widgets/main_widgets/custom_navigation_bar/MotionTabBar.dart';
 import 'package:new_graket_acadimy/view/new_widgets/main_widgets/custom_navigation_bar/MotionTabBarController.dart';
 
@@ -51,7 +51,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       _currentSelectedTab = data == 0
           ? "My Courses"
           : data == 1
-              ? "Basket"
+              ? "Wishlist"
               : data == 2
                   ? "Home"
                   : "Profile";
@@ -59,12 +59,16 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     return GetBuilder<HomeController>(
       assignId: true,
       builder: (controller) {
-        return GetBuilder<BasketController>(
-          init: Get.isRegistered<BasketController>()
-              ? Get.find<BasketController>()
-              : BasketController(),
-          builder: (basketController) {
-            final badge = _buildBasketBadge(basketController.basketCount);
+        return GetBuilder<WishlistController>(
+          init: Get.isRegistered<WishlistController>()
+              ? Get.find<WishlistController>()
+              : WishlistController(),
+          builder: (wishlistController) {
+            final badge = _buildCountBadge(
+              wishlistController.totalCount == 0
+                  ? wishlistController.items.length
+                  : wishlistController.totalCount,
+            );
             return Scaffold(
               backgroundColor: AppColor.scaffoldBg,
               extendBody: true,
@@ -73,10 +77,10 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                 controller: _motionTabBarController,
                 initialSelectedTab: _currentSelectedTab,
                 useSafeArea: true,
-                labels: const ["My Courses", "Basket", "Home", "Profile"],
+                labels: const ["My Courses", "Wishlist", "Home", "Profile"],
                 icons: const [
                   Icons.cases_outlined,
-                  Icons.shopping_basket_outlined,
+                  Icons.bookmark_outline_rounded,
                   Icons.home_rounded,
                   Icons.person_outline_rounded,
                 ],
@@ -108,7 +112,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     );
   }
 
-  Widget? _buildBasketBadge(int count) {
+  Widget? _buildCountBadge(int count) {
     if (count <= 0) return null;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -133,7 +137,7 @@ Widget buildTabContent(int index) {
     case 0:
       return MyCourseScreen();
     case 1:
-      return BasketScreen();
+      return const WishlistScreen();
     case 2:
       return HomeScreen();
     case 3:
