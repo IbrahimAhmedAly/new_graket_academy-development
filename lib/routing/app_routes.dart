@@ -15,6 +15,7 @@ import 'package:new_graket_acadimy/view/new_screens/payment/varify_payment_scree
 
 import '../view/new_screens/main_screens/my_course_screen.dart';
 import '../view/new_screens/course_player/course_player_screen.dart';
+import '../view/new_screens/instructor/instructor_profile_screen.dart';
 import '../view/new_screens/other/enter_code_screen.dart';
 import '../view/new_screens/quiz/quiz_screen.dart';
 
@@ -39,6 +40,8 @@ Map<String, Widget Function(BuildContext)> routes = {
   AppRoutesNames.myCoursesScreen: (context) => HomeMainScreen(routeInitialIndex: 0,),
   AppRoutesNames.coursePlayerScreen: (context) => const CoursePlayerScreen(),
   AppRoutesNames.quizScreen: (context) => const QuizScreen(),
+  AppRoutesNames.instructorProfileScreen: (context) =>
+      const InstructorProfileScreen(),
 };
 
 class AppRoutesNames {
@@ -65,4 +68,5 @@ class AppRoutesNames {
   static const String myCoursesScreen = "/MyCoursesScreen";
   static const String coursePlayerScreen = "/CoursePlayerScreen";
   static const String quizScreen = "/QuizScreen";
+  static const String instructorProfileScreen = "/InstructorProfileScreen";
 }

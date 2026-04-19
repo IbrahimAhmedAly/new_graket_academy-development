@@ -130,6 +130,7 @@ class DataData {
   double? averageRating;
   int? totalReviews;
   PurchaseInfo? purchaseInfo;
+  List<String>? learningOutcomes;
 
   DataData({
     this.id,
@@ -154,6 +155,7 @@ class DataData {
     this.averageRating,
     this.totalReviews,
     this.purchaseInfo,
+    this.learningOutcomes,
   });
 
   factory DataData.fromJson(Map<String, dynamic> json) => DataData(
@@ -193,6 +195,12 @@ class DataData {
     purchaseInfo: json["purchaseInfo"] == null
         ? null
         : PurchaseInfo.fromJson(json["purchaseInfo"]),
+    learningOutcomes: json["learningOutcomes"] == null
+        ? null
+        : (json["learningOutcomes"] is List
+            ? List<String>.from(
+                (json["learningOutcomes"] as List).map((x) => x.toString()))
+            : null),
   );
 
   Map<String, dynamic> toJson() => {
@@ -222,6 +230,7 @@ class DataData {
     "averageRating": averageRating,
     "totalReviews": totalReviews,
     "purchaseInfo": purchaseInfo?.toJson(),
+    "learningOutcomes": learningOutcomes,
   };
 }
 

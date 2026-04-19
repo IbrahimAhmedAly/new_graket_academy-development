@@ -7,6 +7,7 @@ import 'package:new_graket_acadimy/view/new_screens/auth/varification_screen.dar
 import 'package:new_graket_acadimy/view/new_screens/auth/welcome_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/course_player/course_player_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/explore_cource/explore_course_screen.dart';
+import 'package:new_graket_acadimy/view/new_screens/instructor/instructor_profile_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/main_screens/home_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/main_screens/main_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/onboarding/onboard_screen.dart';
@@ -81,5 +82,10 @@ List<GetPage<dynamic>> getScreens = [
       name: AppRoutesNames.quizScreen,
       page: () => const QuizScreen(),
       transition: Transition.downToUp,
+      transitionDuration: const Duration(milliseconds: 350)),
+  GetPage(
+      name: AppRoutesNames.instructorProfileScreen,
+      page: () => const InstructorProfileScreen(),
+      transition: Transition.rightToLeft,
       transitionDuration: const Duration(milliseconds: 350)),
 ];
