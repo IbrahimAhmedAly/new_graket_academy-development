@@ -223,6 +223,75 @@ class DataRequest {
     }
   }
 
+  /// Send JSON body PUT request — same envelope + auth-retry behaviour as POST.
+  Future<Either<(RequestStatus, Map<String, dynamic>), (RequestStatus, Map)>>
+  putDataJsonBody(String url, Map data, {String? token}) async {
+    try {
+      if (await checkInternetFunction()) {
+        appPrint("================================================");
+        appPrint("🟣 STARTING PUT REQUEST");
+        appPrint("➡️ URL: $url");
+        appPrint("📤 Body: ${jsonEncode(data)}");
+        appPrint("================================================");
+
+        final response = await _client.put(
+          Uri.parse(url),
+          body: jsonEncode(data),
+          headers: myHeaders(token: token),
+        ).timeout(
+          const Duration(seconds: 30),
+          onTimeout: () {
+            throw Exception("Request timeout");
+          },
+        );
+
+        if (response.statusCode == 401 || response.statusCode == 403) {
+          final error = _parseErrorResponse(response.body, response.statusCode);
+          if (token != null &&
+              token.isNotEmpty &&
+              url != AppApis.refreshToken) {
+            final newToken = await _refreshAccessToken();
+            if (newToken != null && newToken.isNotEmpty) {
+              final retryResponse = await _client.put(
+                Uri.parse(url),
+                body: jsonEncode(data),
+                headers: myHeaders(token: newToken),
+              );
+              if (retryResponse.statusCode >= 200 &&
+                  retryResponse.statusCode < 300) {
+                final Map receivedData = jsonDecode(retryResponse.body);
+                return Right((RequestStatus.success, receivedData));
+              }
+            }
+            _handleUnauthorized(message: error["message"]?.toString());
+          }
+          return Left((RequestStatus.serverFailure, error));
+        }
+
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          final Map receivedData = jsonDecode(response.body);
+          return Right((RequestStatus.success, receivedData));
+        } else {
+          return Left((
+            RequestStatus.serverFailure,
+            _parseErrorResponse(response.body, response.statusCode),
+          ));
+        }
+      } else {
+        return Left((
+          RequestStatus.offline,
+          {"status": 410, "message": "No Internet Connection"},
+        ));
+      }
+    } catch (e) {
+      if (kDebugMode) print("❌ Exception in putDataJsonBody: $e");
+      return Left((
+        RequestStatus.serverException,
+        {"status": 404, "message": "Server Exception"},
+      ));
+    }
+  }
+
   /// Send form-data request (only if API specifically expects it)
   Future<Either<RequestStatus, Map>> postDataAsForm(
     String url,

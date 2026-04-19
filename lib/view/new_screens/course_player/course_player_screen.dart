@@ -8,6 +8,8 @@ import 'package:new_graket_acadimy/core/constants/app_strings.dart';
 import 'package:new_graket_acadimy/core/constants/colors.dart';
 import 'package:new_graket_acadimy/model/courses/get_course_by_id_model.dart';
 import 'package:new_graket_acadimy/routing/app_routes.dart';
+import 'package:new_graket_acadimy/view/new_screens/course_player/downloads_bottom_sheet.dart';
+import 'package:new_graket_acadimy/view/new_screens/course_player/notes_bottom_sheet.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
@@ -82,6 +84,34 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen> {
         overflow: TextOverflow.ellipsis,
       ),
       actions: [
+        // Notes for the current lesson
+        IconButton(
+          icon: const Icon(Icons.sticky_note_2_outlined,
+              color: AppColor.textPrimary),
+          tooltip: 'Notes',
+          onPressed: () {
+            final item = c.currentContent;
+            if (item == null) return;
+            NotesBottomSheet.show(
+              context: context,
+              contentId: item.content.id ?? '',
+              contentTitle: item.content.title ?? 'Note',
+              userToken: c.userToken,
+            );
+          },
+        ),
+        // Downloads for this course
+        IconButton(
+          icon: const Icon(Icons.download_outlined,
+              color: AppColor.textPrimary),
+          tooltip: 'Downloads',
+          onPressed: () {
+            DownloadsBottomSheet.show(
+              context: context,
+              courseData: c.courseData,
+            );
+          },
+        ),
         Builder(
           builder: (ctx) => IconButton(
             icon: const Icon(Icons.menu_rounded, color: AppColor.textPrimary),

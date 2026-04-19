@@ -6,7 +6,9 @@ import 'package:new_graket_acadimy/core/services/services.dart';
 import 'package:new_graket_acadimy/controller/basket_controller.dart';
 import 'package:new_graket_acadimy/data/basket_data/basket_data.dart';
 import 'package:new_graket_acadimy/data/course_details_data/course_details_data.dart';
+import 'package:new_graket_acadimy/controller/wishlist_controller.dart';
 import 'package:new_graket_acadimy/data/progress_data/progress_data.dart';
+import 'package:new_graket_acadimy/data/related_courses_data/related_courses_data.dart';
 import 'package:new_graket_acadimy/data/wishlist_data/wishlist_data.dart';
 import 'package:new_graket_acadimy/model/courses/get_course_by_id_model.dart';
 import 'package:new_graket_acadimy/routing/app_routes.dart';
@@ -21,6 +23,7 @@ class CourseDetailsControllerImp extends CourseDetailsController {
   BasketData basketData = BasketData(Get.find());
   ProgressData progressData = ProgressData(Get.find());
   WishlistData wishlistData = WishlistData(Get.find());
+  RelatedCoursesData relatedData = RelatedCoursesData(Get.find());
   MyServices myServices = Get.find();
   String userToken = "";
   String courseId = "";
@@ -38,6 +41,30 @@ class CourseDetailsControllerImp extends CourseDetailsController {
   // Wishlist state
   bool isSaved = false;
   bool isWishlistBusy = false;
+
+  // Related courses state (independent request, non-blocking)
+  List<DataData> relatedCourses = [];
+  RequestStatus relatedStatus = RequestStatus.none;
+
+  // Completed content IDs — used to derive "continue watching" next item.
+  Set<String> completedContentIds = {};
+
+  /// First accessible, not-yet-completed content across all sections.
+  /// Used to render the "Continue: Lesson X" banner + one-tap resume.
+  ({Content content, Section section})? get nextLesson {
+    final sections = courseDetails?.sections;
+    if (sections == null) return null;
+    for (final s in sections) {
+      for (final c in s.contents ?? const <Content>[]) {
+        if (contentHasAccess(c) &&
+            c.id != null &&
+            !completedContentIds.contains(c.id)) {
+          return (content: c, section: s);
+        }
+      }
+    }
+    return null;
+  }
 
   // Purchase state derived from purchaseInfo
   bool get isPurchased => courseDetails?.purchaseInfo?.isPurchased == true;
@@ -164,6 +191,8 @@ class CourseDetailsControllerImp extends CourseDetailsController {
     }
     // Fetch wishlist status independently — a non-purchased course can still be saved
     _loadSavedStatus();
+    // Related courses carousel (non-blocking)
+    loadRelatedCourses();
   }
 
   Future<void> _loadSavedStatus() async {
@@ -232,6 +261,11 @@ class CourseDetailsControllerImp extends CourseDetailsController {
           snackPosition: SnackPosition.BOTTOM,
           duration: const Duration(seconds: 2),
         );
+        // Keep the wishlist tab in sync if the user already opened it.
+        if (Get.isRegistered<WishlistController>()) {
+          // Fire-and-forget — no need to await from this flow.
+          Get.find<WishlistController>().loadInitial();
+        }
       }
     } catch (e) {
       isSaved = previous;
@@ -288,11 +322,51 @@ class CourseDetailsControllerImp extends CourseDetailsController {
           completedContents = (progress['completed'] as num?)?.toInt() ?? 0;
           totalContents = (progress['total'] as num?)?.toInt() ?? 0;
         }
+        final ids = dataMap['completedContentIds'];
+        if (ids is List) {
+          completedContentIds =
+              ids.map((e) => e.toString()).toSet();
+        }
         update();
       }
     } catch (e) {
       appPrint('Details-progress load error: $e');
     }
+  }
+
+  /// Loads "students also bought" carousel. Fire-and-forget — failure is
+  /// silent; the section simply doesn't render.
+  Future<void> loadRelatedCourses() async {
+    if (courseId.isEmpty) return;
+    relatedStatus = RequestStatus.loading;
+    update();
+    try {
+      final response = await relatedData.getRelated(
+        courseId: courseId,
+        userToken: userToken,
+        limit: 6,
+      );
+      if (response.$1 == RequestStatus.success && response.$2 is Map) {
+        final raw = response.$2 as Map<String, dynamic>;
+        final inner = raw['data'];
+        List<dynamic> list = [];
+        if (inner is Map && inner['data'] is List) {
+          list = inner['data'] as List;
+        } else if (inner is List) {
+          list = inner;
+        }
+        relatedCourses = list
+            .whereType<Map>()
+            .map((m) => DataData.fromJson(Map<String, dynamic>.from(m)))
+            .toList();
+        relatedStatus = RequestStatus.success;
+      } else {
+        relatedStatus = RequestStatus.failed;
+      }
+    } catch (_) {
+      relatedStatus = RequestStatus.failed;
+    }
+    update();
   }
 
   /// Called when returning from the course player — re-pull progress so the

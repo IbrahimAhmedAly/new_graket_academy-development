@@ -117,6 +117,7 @@ class DataData {
   String? categoryId;
   double? price;
   double? discountPrice;
+  DateTime? discountExpiresAt;
   int? totalDuration;
   int? totalVideos;
   int? totalQuizzes;
@@ -142,6 +143,7 @@ class DataData {
     this.categoryId,
     this.price,
     this.discountPrice,
+    this.discountExpiresAt,
     this.totalDuration,
     this.totalVideos,
     this.totalQuizzes,
@@ -168,6 +170,9 @@ class DataData {
     categoryId: json["categoryId"],
     price: json["price"]?.toDouble(),
     discountPrice: json["discountPrice"]?.toDouble(),
+    discountExpiresAt: json["discountExpiresAt"] == null
+        ? null
+        : DateTime.tryParse(json["discountExpiresAt"].toString()),
     totalDuration: json["totalDuration"],
     totalVideos: json["totalVideos"],
     totalQuizzes: json["totalQuizzes"],
@@ -213,6 +218,7 @@ class DataData {
     "categoryId": categoryId,
     "price": price,
     "discountPrice": discountPrice,
+    "discountExpiresAt": discountExpiresAt?.toIso8601String(),
     "totalDuration": totalDuration,
     "totalVideos": totalVideos,
     "totalQuizzes": totalQuizzes,

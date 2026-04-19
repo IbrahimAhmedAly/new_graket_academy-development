@@ -39,6 +39,30 @@ class AppApis {
   static String getCourseReviews(String courseId) =>
       '$domain/course/$courseId/reviews';
 
+  /// Related courses
+  static String getRelatedCourses(String courseId) =>
+      '$domain/course/$courseId/related';
+
+  /// Q&A
+  static String getCourseQuestions(String courseId) =>
+      '$domain/course/$courseId/questions';
+  static String askCourseQuestion(String courseId) =>
+      '$domain/course/$courseId/questions';
+  static String getQuestionThread(String questionId) =>
+      '$domain/questions/$questionId';
+  static String answerQuestion(String questionId) =>
+      '$domain/questions/$questionId/answers';
+
+  /// Content Notes
+  static String getContentNote(String contentId) =>
+      '$domain/notes/content/$contentId';
+  static String upsertContentNote(String contentId) =>
+      '$domain/notes/content/$contentId';
+  static String deleteContentNote(String contentId) =>
+      '$domain/notes/content/$contentId';
+  static String getCourseNotes(String courseId) =>
+      '$domain/notes/course/$courseId';
+
   /// Instructor APIS
   static String getInstructorById(String instructorId) =>
       '$domain/instructors/$instructorId';
