@@ -658,6 +658,7 @@ class _CourseRow extends StatelessWidget {
                           ? AppColor.greenColor
                           : AppColor.primaryColor,
                     ),
+                  ),
                 ],
               ),
             ],
