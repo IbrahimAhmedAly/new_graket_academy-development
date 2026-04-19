@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+// ignore: unnecessary_import
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:new_graket_acadimy/controller/course_player/course_player_controller.dart';
 import 'package:new_graket_acadimy/controller/my_courses_controller.dart';
@@ -21,10 +23,89 @@ class CoursePlayerScreen extends StatefulWidget {
 }
 
 class _CoursePlayerScreenState extends State<CoursePlayerScreen> {
+  YoutubePlayerController? _yt;
+  String? _activeVideoId;
+  bool _finishedFired = false;
+
   @override
   void initState() {
     super.initState();
     Get.put(CoursePlayerControllerImp());
+  }
+
+  @override
+  void dispose() {
+    _disposeYt();
+    // Make sure we leave portrait + system UI in a good state, even if the
+    // user exits the screen while still in fullscreen.
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    super.dispose();
+  }
+
+  void _disposeYt() {
+    _yt?.removeListener(_ytListener);
+    _yt?.dispose();
+    _yt = null;
+    _activeVideoId = null;
+    _finishedFired = false;
+  }
+
+  /// Ensure we have a YoutubePlayerController for the current video id.
+  /// Returns null if the given URL isn't a YouTube URL we can resolve.
+  YoutubePlayerController? _ensureYtController(String? videoUrl) {
+    if (videoUrl == null || videoUrl.isEmpty) return null;
+    final id = YoutubePlayer.convertUrlToId(videoUrl);
+    if (id == null || id.isEmpty) return null;
+    if (_activeVideoId == id && _yt != null) return _yt;
+
+    // Swap controller when the lesson changes
+    _disposeYt();
+    _yt = YoutubePlayerController(
+      initialVideoId: id,
+      flags: const YoutubePlayerFlags(
+        autoPlay: false,
+        mute: false,
+        enableCaption: true,
+      ),
+    )..addListener(_ytListener);
+    _activeVideoId = id;
+    return _yt;
+  }
+
+  void _ytListener() {
+    final c = _yt;
+    if (c == null || _finishedFired) return;
+    if (c.value.playerState == PlayerState.ended) {
+      _finishedFired = true;
+      if (Get.isRegistered<CoursePlayerControllerImp>()) {
+        Get.find<CoursePlayerControllerImp>().markCurrentComplete();
+      }
+    }
+  }
+
+  /// Called by YoutubePlayerBuilder when the user enters fullscreen via the
+  /// expand button or landscape rotation. Lock to landscape + hide system UI
+  /// so the video genuinely fills the whole device screen like YouTube.
+  void _onEnterFullScreen() {
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+  }
+
+  /// Called when the user taps the fullscreen exit icon (or double-taps back).
+  /// Restore portrait + show the status/nav bar.
+  void _onExitFullScreen() {
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   }
 
   void _maybeShowCompletion(CoursePlayerControllerImp c) {
@@ -38,7 +119,8 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen> {
   }
 
   void _onWillPop() {
-    // Refresh My Courses so returning to that tab reflects latest progress.
+    // Make sure we leave any lingering landscape lock behind us
+    _onExitFullScreen();
     if (Get.isRegistered<MyCoursesController>()) {
       Get.find<MyCoursesController>().onRefresh();
     }
@@ -49,7 +131,18 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen> {
     return GetBuilder<CoursePlayerControllerImp>(
       builder: (controller) {
         _maybeShowCompletion(controller);
-        return PopScope(
+
+        // Decide whether the current content is a YouTube video. If so we
+        // spin up / reuse a controller and wrap the whole Scaffold in a
+        // YoutubePlayerBuilder — that lets the player replace the entire
+        // screen in landscape/fullscreen, just like the YouTube app.
+        final item = controller.currentContent;
+        final isVideoContent = item != null &&
+            (item.content.type ?? '').toUpperCase() == 'VIDEO';
+        final ytController =
+            isVideoContent ? _ensureYtController(item.content.videoUrl) : null;
+
+        Widget scaffold = PopScope(
           canPop: true,
           onPopInvokedWithResult: (didPop, result) {
             if (didPop) _onWillPop();
@@ -57,10 +150,35 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen> {
           child: Scaffold(
             backgroundColor: AppColor.scaffoldBg,
             appBar: _buildAppBar(controller),
-            body: _buildBody(controller),
+            body: _buildBody(controller, ytController),
             endDrawer: _SectionsDrawer(controller: controller),
           ),
         );
+
+        if (ytController != null) {
+          // The builder swaps the subtree for the bare player widget when in
+          // landscape orientation — exactly the YouTube fullscreen pattern.
+          return YoutubePlayerBuilder(
+            onEnterFullScreen: _onEnterFullScreen,
+            onExitFullScreen: _onExitFullScreen,
+            player: YoutubePlayer(
+              controller: ytController,
+              showVideoProgressIndicator: true,
+              progressIndicatorColor: AppColor.primaryColor,
+              progressColors: ProgressBarColors(
+                playedColor: AppColor.primaryColor,
+                handleColor: AppColor.primaryColor,
+              ),
+            ),
+            builder: (ctx, player) {
+              // Inject the supplied player widget into the Scaffold via
+              // InheritedWidget so _buildBody → _VideoViewer can grab it.
+              return _InheritedYtPlayer(player: player, child: scaffold);
+            },
+          );
+        }
+
+        return scaffold;
       },
     );
   }
@@ -123,7 +241,10 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen> {
     );
   }
 
-  Widget _buildBody(CoursePlayerControllerImp c) {
+  Widget _buildBody(
+    CoursePlayerControllerImp c,
+    YoutubePlayerController? ytController,
+  ) {
     if (c.requestStatus == RequestStatus.loading) {
       return const Center(
         child: CircularProgressIndicator(color: AppColor.primaryColor),
@@ -147,7 +268,7 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen> {
             children: [
               // Main content viewer
               Expanded(
-                child: _buildViewer(type, item, c),
+                child: _buildViewer(type, item, c, ytController),
               ),
               // Footer: title + prev/next
               _ContentFooter(controller: c),
@@ -162,13 +283,14 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen> {
     String type,
     ContentWithSection item,
     CoursePlayerControllerImp c,
+    YoutubePlayerController? ytController,
   ) {
     switch (type) {
       case 'VIDEO':
         return _VideoViewer(
           key: ValueKey('video-${item.content.id}'),
           content: item.content,
-          onFinished: c.markCurrentComplete,
+          ytAvailable: ytController != null,
         );
       case 'PDF':
         return _PdfViewer(
@@ -187,6 +309,22 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen> {
         );
     }
   }
+}
+
+// InheritedWidget that carries the YoutubePlayer widget built by
+// YoutubePlayerBuilder down to the VideoViewer in the body tree.
+class _InheritedYtPlayer extends InheritedWidget {
+  final Widget player;
+  const _InheritedYtPlayer({required this.player, required super.child});
+
+  static Widget? playerOf(BuildContext context) {
+    final w = context
+        .dependOnInheritedWidgetOfExactType<_InheritedYtPlayer>();
+    return w?.player;
+  }
+
+  @override
+  bool updateShouldNotify(_InheritedYtPlayer old) => old.player != player;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -460,91 +598,45 @@ class _PrimaryButton extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  Video viewer (uses YouTube player for YT URLs, fallback for others)
+//  Video viewer — for YouTube URLs we consume the player widget that
+//  YoutubePlayerBuilder injected via _InheritedYtPlayer (so fullscreen
+//  rotation can replace the whole subtree). Non-YouTube URLs fall back
+//  to an external-open button.
 // ═══════════════════════════════════════════════════════════════
-class _VideoViewer extends StatefulWidget {
+class _VideoViewer extends StatelessWidget {
   final Content content;
-  final VoidCallback onFinished;
+  final bool ytAvailable;
 
   const _VideoViewer({
     super.key,
     required this.content,
-    required this.onFinished,
+    required this.ytAvailable,
   });
 
   @override
-  State<_VideoViewer> createState() => _VideoViewerState();
-}
-
-class _VideoViewerState extends State<_VideoViewer> {
-  YoutubePlayerController? _ytController;
-  bool _finishedFired = false;
-
-  bool get _isYouTube {
-    final url = widget.content.videoUrl ?? '';
-    return url.contains('youtube.com') || url.contains('youtu.be');
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    if (_isYouTube) {
-      final id = YoutubePlayer.convertUrlToId(widget.content.videoUrl ?? '') ??
-          '';
-      if (id.isNotEmpty) {
-        _ytController = YoutubePlayerController(
-          initialVideoId: id,
-          flags: const YoutubePlayerFlags(autoPlay: false, mute: false),
-        )..addListener(_ytListener);
-      }
-    }
-  }
-
-  void _ytListener() {
-    final c = _ytController;
-    if (c == null || _finishedFired) return;
-    if (c.value.playerState == PlayerState.ended) {
-      _finishedFired = true;
-      widget.onFinished();
-    }
-  }
-
-  @override
-  void dispose() {
-    _ytController?.removeListener(_ytListener);
-    _ytController?.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final url = widget.content.videoUrl ?? '';
+    final url = content.videoUrl ?? '';
     if (url.isEmpty) {
       return _centeredMessage(
         icon: Icons.videocam_off_rounded,
         text: 'No video URL available',
       );
     }
-    if (_isYouTube && _ytController != null) {
-      return Container(
-        color: Colors.black,
-        alignment: Alignment.center,
-        child: YoutubePlayer(
-          controller: _ytController!,
-          showVideoProgressIndicator: true,
-          progressIndicatorColor: AppColor.primaryColor,
-          progressColors: ProgressBarColors(
-            playedColor: AppColor.primaryColor,
-            handleColor: AppColor.primaryColor,
-          ),
-        ),
-      );
+    if (ytAvailable) {
+      final player = _InheritedYtPlayer.playerOf(context);
+      if (player != null) {
+        return Container(
+          color: Colors.black,
+          alignment: Alignment.center,
+          child: player,
+        );
+      }
     }
     // Non-YouTube: fallback to external viewer
     return _ExternalMediaView(
       url: url,
       icon: Icons.play_circle_outline_rounded,
-      title: widget.content.title ?? 'Video',
+      title: content.title ?? 'Video',
       buttonLabel: 'Open Video',
     );
   }
