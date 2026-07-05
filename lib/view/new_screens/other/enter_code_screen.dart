@@ -131,7 +131,15 @@ class EnterCodeScreen extends StatelessWidget {
                 CustomAuthButton(
                   name: "Activate",
                   isLoading: controller.isLoading,
-                  onTap: controller.isLoading ? null : controller.sendCode,
+                  onTap: controller.isLoading
+                      ? null
+                      : () {
+                          controller.sendCode().then((success) {
+                            if (success && context.mounted) {
+                              Navigator.of(context).pop();
+                            }
+                          });
+                        },
                 ),
 
                 // ── Inline error ──

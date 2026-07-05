@@ -10,10 +10,13 @@ import 'package:new_graket_acadimy/core/constants/app_strings.dart';
 import 'package:new_graket_acadimy/core/constants/colors.dart';
 import 'package:new_graket_acadimy/model/courses/get_course_by_id_model.dart';
 import 'package:new_graket_acadimy/routing/app_routes.dart';
-import 'package:new_graket_acadimy/view/new_screens/course_player/downloads_bottom_sheet.dart';
 import 'package:new_graket_acadimy/view/new_screens/course_player/notes_bottom_sheet.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:flutter_pdfview/flutter_pdfview.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:http/http.dart' as http;
+import 'dart:io';
 
 class CoursePlayerScreen extends StatefulWidget {
   const CoursePlayerScreen({super.key});
@@ -35,7 +38,8 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen> {
 
   @override
   void dispose() {
-    _disposeYt();
+    _yt?.dispose();
+    _yt = null;
     // Make sure we leave portrait + system UI in a good state, even if the
     // user exits the screen while still in fullscreen.
     SystemChrome.setPreferredOrientations([
@@ -46,45 +50,54 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen> {
     super.dispose();
   }
 
-  void _disposeYt() {
-    _yt?.removeListener(_ytListener);
-    _yt?.dispose();
-    _yt = null;
-    _activeVideoId = null;
-    _finishedFired = false;
-  }
-
   /// Ensure we have a YoutubePlayerController for the current video id.
   /// Returns null if the given URL isn't a YouTube URL we can resolve.
+  ///
+  /// NOTE: this runs inside build(). We must NOT dispose the previous
+  /// controller here — the old player subtree (ProgressBar, PlayPauseButton…)
+  /// is still mounted this frame and would touch a dead controller, which is
+  /// what threw "A YoutubePlayerController was used after being disposed".
+  /// Instead we retire the old controller in a post-frame callback, and the
+  /// ValueKey on YoutubePlayerBuilder (see build) tears the old subtree down
+  /// cleanly before that disposal runs.
   YoutubePlayerController? _ensureYtController(String? videoUrl) {
     if (videoUrl == null || videoUrl.isEmpty) return null;
     final id = YoutubePlayer.convertUrlToId(videoUrl);
     if (id == null || id.isEmpty) return null;
     if (_activeVideoId == id && _yt != null) return _yt;
 
-    // Swap controller when the lesson changes
-    _disposeYt();
-    _yt = YoutubePlayerController(
+    // Lesson changed → build a fresh controller for the new video and retire
+    // the old one *after* this frame so nothing references it mid-build.
+    final old = _yt;
+    if (old != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => old.dispose());
+    }
+    _finishedFired = false;
+    _activeVideoId = id;
+    _yt = _createController(id);
+    return _yt;
+  }
+
+  YoutubePlayerController _createController(String id) {
+    late final YoutubePlayerController controller;
+    controller = YoutubePlayerController(
       initialVideoId: id,
       flags: const YoutubePlayerFlags(
         autoPlay: false,
         mute: false,
         enableCaption: true,
       ),
-    )..addListener(_ytListener);
-    _activeVideoId = id;
-    return _yt;
-  }
-
-  void _ytListener() {
-    final c = _yt;
-    if (c == null || _finishedFired) return;
-    if (c.value.playerState == PlayerState.ended) {
-      _finishedFired = true;
-      if (Get.isRegistered<CoursePlayerControllerImp>()) {
-        Get.find<CoursePlayerControllerImp>().markCurrentComplete();
-      }
-    }
+    )..addListener(() {
+        // Ignore callbacks from a controller that has been swapped out.
+        if (!identical(_yt, controller) || _finishedFired) return;
+        if (controller.value.playerState == PlayerState.ended) {
+          _finishedFired = true;
+          if (Get.isRegistered<CoursePlayerControllerImp>()) {
+            Get.find<CoursePlayerControllerImp>().markCurrentComplete();
+          }
+        }
+      });
+    return controller;
   }
 
   /// Called by YoutubePlayerBuilder when the user enters fullscreen via the
@@ -158,7 +171,11 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen> {
         if (ytController != null) {
           // The builder swaps the subtree for the bare player widget when in
           // landscape orientation — exactly the YouTube fullscreen pattern.
+          // Keying by the video id forces a clean teardown/rebuild of the
+          // player subtree on every lesson switch, so the new controller never
+          // gets hot-swapped onto the old (about-to-be-disposed) element tree.
           return YoutubePlayerBuilder(
+            key: ValueKey('yt-$_activeVideoId'),
             onEnterFullScreen: _onEnterFullScreen,
             onExitFullScreen: _onExitFullScreen,
             player: YoutubePlayer(
@@ -215,18 +232,6 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen> {
               contentId: item.content.id ?? '',
               contentTitle: item.content.title ?? 'Note',
               userToken: c.userToken,
-            );
-          },
-        ),
-        // Downloads for this course
-        IconButton(
-          icon: const Icon(Icons.download_outlined,
-              color: AppColor.textPrimary),
-          tooltip: 'Downloads',
-          onPressed: () {
-            DownloadsBottomSheet.show(
-              context: context,
-              courseData: c.courseData,
             );
           },
         ),
@@ -385,9 +390,11 @@ class _ContentFooter extends StatelessWidget {
     final isDone = controller.isCompleted(item.content.id ?? '');
 
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: AppPadding.pad16,
-        vertical: AppPadding.pad12,
+      padding: EdgeInsets.fromLTRB(
+        AppPadding.pad16,
+        AppPadding.pad12,
+        AppPadding.pad16,
+        AppPadding.pad12 + MediaQuery.of(context).padding.bottom,
       ),
       decoration: BoxDecoration(
         color: AppColor.cardBg,
@@ -463,15 +470,18 @@ class _ContentFooter extends StatelessWidget {
           SizedBox(height: AppHeight.h12),
           Row(
             children: [
-              _NavButton(
-                icon: Icons.arrow_back_ios_rounded,
-                label: 'Previous',
-                enabled: controller.hasPrev,
-                onTap: controller.goPrev,
+              Flexible(
+                child: _NavButton(
+                  icon: Icons.arrow_back_ios_rounded,
+                  label: 'Previous',
+                  enabled: controller.hasPrev,
+                  onTap: controller.goPrev,
+                ),
               ),
               SizedBox(width: AppWidth.w8),
               if (!isDone)
                 Expanded(
+                  flex: 2,
                   child: _PrimaryButton(
                     label: 'Mark as Complete',
                     onTap: controller.markCurrentComplete,
@@ -481,12 +491,14 @@ class _ContentFooter extends StatelessWidget {
               else
                 const Spacer(),
               SizedBox(width: AppWidth.w8),
-              _NavButton(
-                icon: Icons.arrow_forward_ios_rounded,
-                label: 'Next',
-                enabled: controller.hasNext,
-                onTap: controller.goNext,
-                trailingIcon: true,
+              Flexible(
+                child: _NavButton(
+                  icon: Icons.arrow_forward_ios_rounded,
+                  label: 'Next',
+                  enabled: controller.hasNext,
+                  onTap: controller.goNext,
+                  trailingIcon: true,
+                ),
               ),
             ],
           ),
@@ -535,12 +547,16 @@ class _NavButton extends StatelessWidget {
                   color:
                       enabled ? AppColor.primaryColor : AppColor.textHint),
             if (!trailingIcon) SizedBox(width: AppWidth.w4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: AppTextSize.textSize12,
-                fontWeight: FontWeight.w600,
-                color: enabled ? AppColor.primaryColor : AppColor.textHint,
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: AppTextSize.textSize12,
+                  fontWeight: FontWeight.w600,
+                  color: enabled ? AppColor.primaryColor : AppColor.textHint,
+                ),
               ),
             ),
             if (trailingIcon) SizedBox(width: AppWidth.w4),
@@ -579,15 +595,20 @@ class _PrimaryButton extends StatelessWidget {
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, size: 16, color: Colors.white),
             SizedBox(width: AppWidth.w4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: AppTextSize.textSize12,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: AppTextSize.textSize12,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
               ),
             ),
           ],
@@ -664,7 +685,7 @@ class _VideoViewer extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════
 //  PDF viewer — opens externally via url_launcher
 // ═══════════════════════════════════════════════════════════════
-class _PdfViewer extends StatelessWidget {
+class _PdfViewer extends StatefulWidget {
   final Content content;
   final bool isCompleted;
   final VoidCallback onMarkComplete;
@@ -676,9 +697,78 @@ class _PdfViewer extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final url = content.pdfUrl ?? '';
+  State<_PdfViewer> createState() => _PdfViewerState();
+}
+
+class _PdfViewerState extends State<_PdfViewer> {
+  String? _localPath;
+  String? _error;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _downloadPdf();
+  }
+
+  @override
+  void dispose() {
+    // Best-effort cleanup so the cached file doesn't linger after the
+    // lesson is closed.
+    if (_localPath != null) {
+      final f = File(_localPath!);
+      f.exists().then((exists) {
+        if (exists) f.delete();
+      });
+    }
+    super.dispose();
+  }
+
+  Future<void> _downloadPdf() async {
+    final url = widget.content.pdfUrl ?? '';
     if (url.isEmpty) {
+      setState(() {
+        _loading = false;
+        _error = 'No PDF URL available';
+      });
+      return;
+    }
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode != 200) {
+        setState(() {
+          _loading = false;
+          _error = 'Failed to load PDF';
+        });
+        return;
+      }
+      final dir = await getTemporaryDirectory();
+      final file = File(
+        '${dir.path}/lesson_${widget.content.id ?? DateTime.now().millisecondsSinceEpoch}.pdf',
+      );
+      await file.writeAsBytes(response.bodyBytes, flush: true);
+      if (!mounted) return;
+      setState(() {
+        _localPath = file.path;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = 'Could not open this PDF';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColor.primaryColor),
+      );
+    }
+    if (_error != null || _localPath == null) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -687,7 +777,7 @@ class _PdfViewer extends StatelessWidget {
                 size: 48, color: AppColor.textHint),
             SizedBox(height: AppHeight.h12),
             Text(
-              'No PDF URL available',
+              _error ?? 'Could not open this PDF',
               style: TextStyle(
                 fontSize: AppTextSize.textSize14,
                 color: AppColor.textHint,
@@ -697,11 +787,14 @@ class _PdfViewer extends StatelessWidget {
         ),
       );
     }
-    return _ExternalMediaView(
-      url: url,
-      icon: Icons.picture_as_pdf_rounded,
-      title: content.title ?? 'Document',
-      buttonLabel: 'Open PDF',
+    return PDFView(
+      filePath: _localPath!,
+      enableSwipe: true,
+      swipeHorizontal: false,
+      autoSpacing: true,
+      pageFling: true,
+      pageSnap: true,
+      fitPolicy: FitPolicy.BOTH,
     );
   }
 }
