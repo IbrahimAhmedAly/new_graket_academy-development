@@ -174,7 +174,6 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen> {
             backgroundColor: AppColor.scaffoldBg,
             appBar: _buildAppBar(controller),
             body: _buildBody(controller, ytController),
-            endDrawer: _SectionsDrawer(controller: controller),
           ),
         );
 
@@ -245,13 +244,6 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen> {
             );
           },
         ),
-        Builder(
-          builder: (ctx) => IconButton(
-            icon: const Icon(Icons.menu_rounded, color: AppColor.textPrimary),
-            onPressed: () => Scaffold.of(ctx).openEndDrawer(),
-            tooltip: 'Course Content',
-          ),
-        ),
       ],
     );
   }
@@ -277,23 +269,44 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen> {
 
     return Column(
       children: [
-        _ProgressBar(percentage: c.progressPercentage),
+        // The current lesson is pinned at the very top, like Udemy.
+        _buildTopStage(type, item, c, ytController),
+        // Below the player: lesson info + the full, scrollable curriculum
+        // the user taps to jump between lessons.
         Expanded(
-          child: Column(
+          child: ListView(
+            padding: const EdgeInsets.only(bottom: 32),
             children: [
-              // Main content viewer
-              Expanded(
-                child: _buildViewer(type, item, c, ytController),
-              ),
-              // Footer: title + prev/next
-              _ContentFooter(
+              _LessonInfoBar(
                 controller: c,
                 onWatchAgain: ytController != null ? _watchAgain : null,
               ),
+              _InlineCurriculum(controller: c),
             ],
           ),
         ),
       ],
+    );
+  }
+
+  /// The fixed-height stage at the top that shows the current lesson. A real
+  /// YouTube video gets a clean 16:9 frame; other content types (PDF/quiz) get
+  /// a comfortable slice of the screen and scroll their own content.
+  Widget _buildTopStage(
+    String type,
+    ContentWithSection item,
+    CoursePlayerControllerImp c,
+    YoutubePlayerController? ytController,
+  ) {
+    if (type == 'VIDEO' && ytController != null) {
+      return AspectRatio(
+        aspectRatio: 16 / 9,
+        child: _buildViewer(type, item, c, ytController),
+      );
+    }
+    return SizedBox(
+      height: 320,
+      child: _buildViewer(type, item, c, ytController),
     );
   }
 
@@ -346,56 +359,14 @@ class _InheritedYtPlayer extends InheritedWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  Progress bar at top
+//  Lesson info bar: section + title + a single action button
+//  (Mark as Complete / Watch Again). No prev/next — the user jumps
+//  between lessons from the curriculum list below.
 // ═══════════════════════════════════════════════════════════════
-class _ProgressBar extends StatelessWidget {
-  final int percentage;
-  const _ProgressBar({required this.percentage});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: AppPadding.pad16,
-        vertical: AppPadding.pad8,
-      ),
-      color: AppColor.cardBg,
-      child: Row(
-        children: [
-          Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadius.radius10),
-              child: LinearProgressIndicator(
-                value: (percentage / 100).clamp(0.0, 1.0),
-                minHeight: 6,
-                backgroundColor: AppColor.gray.withValues(alpha: 0.15),
-                valueColor:
-                    const AlwaysStoppedAnimation<Color>(AppColor.primaryColor),
-              ),
-            ),
-          ),
-          SizedBox(width: AppWidth.w12),
-          Text(
-            '$percentage%',
-            style: TextStyle(
-              fontSize: AppTextSize.textSize12,
-              fontWeight: FontWeight.w700,
-              color: AppColor.primaryColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  Content footer: title + prev/next
-// ═══════════════════════════════════════════════════════════════
-class _ContentFooter extends StatelessWidget {
+class _LessonInfoBar extends StatelessWidget {
   final CoursePlayerControllerImp controller;
   final VoidCallback? onWatchAgain;
-  const _ContentFooter({required this.controller, this.onWatchAgain});
+  const _LessonInfoBar({required this.controller, this.onWatchAgain});
 
   @override
   Widget build(BuildContext context) {
@@ -405,126 +376,45 @@ class _ContentFooter extends StatelessWidget {
     final isVideo = (item.content.type ?? '').toUpperCase() == 'VIDEO';
 
     return Container(
-      padding: EdgeInsets.fromLTRB(
-        AppPadding.pad16,
-        AppPadding.pad12,
-        AppPadding.pad16,
-        AppPadding.pad12 + MediaQuery.of(context).padding.bottom,
-      ),
-      decoration: BoxDecoration(
-        color: AppColor.cardBg,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
+      padding: EdgeInsets.all(AppPadding.pad16),
+      color: AppColor.cardBg,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      item.sectionTitle,
-                      style: TextStyle(
-                        fontSize: AppTextSize.textSize12,
-                        color: AppColor.textHint,
-                      ),
-                    ),
-                    SizedBox(height: AppHeight.h3),
-                    Text(
-                      item.content.title ?? '',
-                      style: TextStyle(
-                        fontSize: AppTextSize.textSize15,
-                        fontWeight: FontWeight.w700,
-                        color: AppColor.textPrimary,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              if (isDone)
-                Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: AppPadding.pad8,
-                    vertical: AppPadding.pad4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColor.greenColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(AppRadius.radius20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.check_circle_rounded,
-                          color: AppColor.greenColor, size: 14),
-                      SizedBox(width: AppWidth.w4),
-                      Text(
-                        'Completed',
-                        style: TextStyle(
-                          fontSize: AppTextSize.textSize10,
-                          fontWeight: FontWeight.w700,
-                          color: AppColor.greenColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
+          Text(
+            item.sectionTitle,
+            style: TextStyle(
+              fontSize: AppTextSize.textSize12,
+              color: AppColor.textHint,
+            ),
           ),
-          SizedBox(height: AppHeight.h12),
-          Row(
-            children: [
-              Flexible(
-                child: _NavButton(
-                  icon: Icons.arrow_back_ios_rounded,
-                  label: 'Previous',
-                  enabled: controller.hasPrev,
-                  onTap: controller.goPrev,
-                ),
-              ),
-              SizedBox(width: AppWidth.w8),
-              if (!isDone)
-                Expanded(
-                  flex: 2,
-                  child: _PrimaryButton(
+          SizedBox(height: AppHeight.h3),
+          Text(
+            item.content.title ?? '',
+            style: TextStyle(
+              fontSize: AppTextSize.textSize18,
+              fontWeight: FontWeight.w800,
+              color: AppColor.textPrimary,
+            ),
+          ),
+          SizedBox(height: AppHeight.h16),
+          // A single full-width action that depends on completion state.
+          SizedBox(
+            width: double.infinity,
+            child: !isDone
+                ? _PrimaryButton(
                     label: 'Mark as Complete',
                     onTap: controller.markCurrentComplete,
                     icon: Icons.check_rounded,
-                  ),
-                )
-              else if (isVideo && onWatchAgain != null)
-                Expanded(
-                  flex: 2,
-                  child: _PrimaryButton(
-                    label: 'Watch Again',
-                    onTap: onWatchAgain!,
-                    icon: Icons.replay_rounded,
-                  ),
-                )
-              else
-                const Spacer(),
-              SizedBox(width: AppWidth.w8),
-              Flexible(
-                child: _NavButton(
-                  icon: Icons.arrow_forward_ios_rounded,
-                  label: 'Next',
-                  enabled: controller.hasNext,
-                  onTap: controller.goNext,
-                  trailingIcon: true,
-                ),
-              ),
-            ],
+                  )
+                : (isVideo && onWatchAgain != null)
+                    ? _PrimaryButton(
+                        label: 'Watch Again',
+                        onTap: onWatchAgain!,
+                        icon: Icons.replay_rounded,
+                      )
+                    : const _CompletedChip(),
           ),
         ],
       ),
@@ -532,65 +422,34 @@ class _ContentFooter extends StatelessWidget {
   }
 }
 
-class _NavButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool enabled;
-  final VoidCallback onTap;
-  final bool trailingIcon;
-
-  const _NavButton({
-    required this.icon,
-    required this.label,
-    required this.enabled,
-    required this.onTap,
-    this.trailingIcon = false,
-  });
+// A static "Completed" pill shown for finished non-video lessons.
+class _CompletedChip extends StatelessWidget {
+  const _CompletedChip();
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: enabled ? onTap : null,
-      child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: AppPadding.pad12,
-          vertical: AppPadding.pad10,
-        ),
-        decoration: BoxDecoration(
-          color: enabled
-              ? AppColor.primaryLight
-              : AppColor.gray.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(AppRadius.radius10),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (!trailingIcon)
-              Icon(icon,
-                  size: 14,
-                  color:
-                      enabled ? AppColor.primaryColor : AppColor.textHint),
-            if (!trailingIcon) SizedBox(width: AppWidth.w4),
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: AppTextSize.textSize12,
-                  fontWeight: FontWeight.w600,
-                  color: enabled ? AppColor.primaryColor : AppColor.textHint,
-                ),
-              ),
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: AppPadding.pad10),
+      decoration: BoxDecoration(
+        color: AppColor.greenColor.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(AppRadius.radius10),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.check_circle_rounded,
+              color: AppColor.greenColor, size: 18),
+          SizedBox(width: AppWidth.w8),
+          Text(
+            'Completed',
+            style: TextStyle(
+              fontSize: AppTextSize.textSize14,
+              fontWeight: FontWeight.w700,
+              color: AppColor.greenColor,
             ),
-            if (trailingIcon) SizedBox(width: AppWidth.w4),
-            if (trailingIcon)
-              Icon(icon,
-                  size: 14,
-                  color:
-                      enabled ? AppColor.primaryColor : AppColor.textHint),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -1026,11 +885,13 @@ class _QuizLauncher extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  Sections drawer (right side) — all sections + contents with status
+//  Inline curriculum — all sections + lessons shown right under the
+//  player (Udemy style). It lives inside the body's ListView, so it is
+//  a plain Column (no inner scroll). Tapping a lesson jumps to it.
 // ═══════════════════════════════════════════════════════════════
-class _SectionsDrawer extends StatelessWidget {
+class _InlineCurriculum extends StatelessWidget {
   final CoursePlayerControllerImp controller;
-  const _SectionsDrawer({required this.controller});
+  const _InlineCurriculum({required this.controller});
 
   IconData _iconForType(String? type) {
     switch ((type ?? '').toUpperCase()) {
@@ -1048,117 +909,112 @@ class _SectionsDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sections = controller.courseData?.sections ?? [];
-    return Drawer(
-      backgroundColor: AppColor.cardBg,
-      child: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: EdgeInsets.all(AppPadding.pad16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Course Content',
-                      style: TextStyle(
-                        fontSize: AppTextSize.textSize16,
-                        fontWeight: FontWeight.w700,
-                        color: AppColor.textPrimary,
-                      ),
-                    ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header: "Course Content" + overall progress %.
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            AppPadding.pad16,
+            AppPadding.pad16,
+            AppPadding.pad16,
+            AppPadding.pad8,
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Course Content',
+                  style: TextStyle(
+                    fontSize: AppTextSize.textSize16,
+                    fontWeight: FontWeight.w800,
+                    color: AppColor.textPrimary,
                   ),
-                  Text(
-                    '${controller.progressPercentage}%',
-                    style: TextStyle(
-                      fontSize: AppTextSize.textSize14,
-                      fontWeight: FontWeight.w700,
-                      color: AppColor.primaryColor,
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child: ListView.builder(
-                itemCount: sections.length,
-                itemBuilder: (ctx, i) {
-                  final section = sections[i];
-                  final contents = section.contents ?? const [];
-                  return Theme(
-                    data: Theme.of(ctx)
-                        .copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      initiallyExpanded:
-                          controller.currentContent?.sectionId == section.id,
-                      title: Text(
-                        section.title ?? 'Section ${i + 1}',
-                        style: TextStyle(
-                          fontSize: AppTextSize.textSize14,
-                          fontWeight: FontWeight.w700,
-                          color: AppColor.textPrimary,
-                        ),
-                      ),
-                      children: contents.map((content) {
-                        final idx = controller.allContents.indexWhere(
-                            (c) => c.content.id == content.id);
-                        final isAccessible = idx >= 0;
-                        final isCurrent = idx == controller.currentIndex;
-                        final isDone =
-                            controller.isCompleted(content.id ?? '');
-                        return ListTile(
-                          dense: true,
-                          onTap: isAccessible
-                              ? () {
-                                  controller.goToContent(idx);
-                                  Navigator.of(ctx).pop();
-                                }
-                              : null,
-                          tileColor: isCurrent
-                              ? AppColor.primaryLight.withValues(alpha: 0.5)
-                              : null,
-                          leading: Icon(
-                            _iconForType(content.type),
-                            size: 18,
-                            color: isAccessible
-                                ? AppColor.primaryColor
-                                : AppColor.textHint,
-                          ),
-                          title: Text(
-                            content.title ?? '',
-                            style: TextStyle(
-                              fontSize: AppTextSize.textSize13,
-                              fontWeight:
-                                  isCurrent ? FontWeight.w700 : FontWeight.w500,
-                              color: isAccessible
-                                  ? AppColor.textPrimary
-                                  : AppColor.textHint,
-                            ),
-                          ),
-                          trailing: Icon(
-                            isDone
-                                ? Icons.check_circle_rounded
-                                : isAccessible
-                                    ? Icons.lock_open_rounded
-                                    : Icons.lock_rounded,
-                            size: 16,
-                            color: isDone
-                                ? AppColor.greenColor
-                                : isAccessible
-                                    ? AppColor.greenColor
-                                    : AppColor.textHint,
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  );
-                },
+              Text(
+                '${controller.progressPercentage}%',
+                style: TextStyle(
+                  fontSize: AppTextSize.textSize14,
+                  fontWeight: FontWeight.w700,
+                  color: AppColor.primaryColor,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
+        const Divider(height: 1),
+        // Sections — plain entries; the parent ListView handles scrolling.
+        ...List.generate(sections.length, (i) {
+          final section = sections[i];
+          final contents = section.contents ?? const [];
+          return Theme(
+            data: Theme.of(context)
+                .copyWith(dividerColor: Colors.transparent),
+            child: ExpansionTile(
+              key: PageStorageKey('sec-${section.id ?? i}'),
+              initiallyExpanded:
+                  controller.currentContent?.sectionId == section.id,
+              title: Text(
+                section.title ?? 'Section ${i + 1}',
+                style: TextStyle(
+                  fontSize: AppTextSize.textSize14,
+                  fontWeight: FontWeight.w700,
+                  color: AppColor.textPrimary,
+                ),
+              ),
+              children: contents.map((content) {
+                final idx = controller.allContents
+                    .indexWhere((c) => c.content.id == content.id);
+                final isAccessible = idx >= 0;
+                final isCurrent = idx == controller.currentIndex;
+                final isDone = controller.isCompleted(content.id ?? '');
+                return ListTile(
+                  dense: true,
+                  onTap:
+                      isAccessible ? () => controller.goToContent(idx) : null,
+                  tileColor: isCurrent
+                      ? AppColor.primaryLight.withValues(alpha: 0.5)
+                      : null,
+                  leading: Icon(
+                    _iconForType(content.type),
+                    size: 18,
+                    color: isAccessible
+                        ? AppColor.primaryColor
+                        : AppColor.textHint,
+                  ),
+                  title: Text(
+                    content.title ?? '',
+                    style: TextStyle(
+                      fontSize: AppTextSize.textSize13,
+                      fontWeight:
+                          isCurrent ? FontWeight.w700 : FontWeight.w500,
+                      color: isAccessible
+                          ? AppColor.textPrimary
+                          : AppColor.textHint,
+                    ),
+                  ),
+                  trailing: Icon(
+                    isDone
+                        ? Icons.check_circle_rounded
+                        : isCurrent
+                            ? Icons.play_circle_fill_rounded
+                            : isAccessible
+                                ? Icons.play_circle_outline_rounded
+                                : Icons.lock_rounded,
+                    size: 18,
+                    color: isDone
+                        ? AppColor.greenColor
+                        : isAccessible
+                            ? AppColor.primaryColor
+                            : AppColor.textHint,
+                  ),
+                );
+              }).toList(),
+            ),
+          );
+        }),
+      ],
     );
   }
 }
