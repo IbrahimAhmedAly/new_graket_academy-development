@@ -139,6 +139,16 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen> {
     }
   }
 
+  /// Restart the current YouTube lesson from the beginning. Wired to the
+  /// "Watch Again" button that appears once a video is completed.
+  void _watchAgain() {
+    final c = _yt;
+    if (c == null) return;
+    _finishedFired = false;
+    c.seekTo(Duration.zero);
+    c.play();
+  }
+
   @override
   Widget build(BuildContext context) {
     return GetBuilder<CoursePlayerControllerImp>(
@@ -276,7 +286,10 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen> {
                 child: _buildViewer(type, item, c, ytController),
               ),
               // Footer: title + prev/next
-              _ContentFooter(controller: c),
+              _ContentFooter(
+                controller: c,
+                onWatchAgain: ytController != null ? _watchAgain : null,
+              ),
             ],
           ),
         ),
@@ -381,13 +394,15 @@ class _ProgressBar extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════
 class _ContentFooter extends StatelessWidget {
   final CoursePlayerControllerImp controller;
-  const _ContentFooter({required this.controller});
+  final VoidCallback? onWatchAgain;
+  const _ContentFooter({required this.controller, this.onWatchAgain});
 
   @override
   Widget build(BuildContext context) {
     final item = controller.currentContent;
     if (item == null) return const SizedBox.shrink();
     final isDone = controller.isCompleted(item.content.id ?? '');
+    final isVideo = (item.content.type ?? '').toUpperCase() == 'VIDEO';
 
     return Container(
       padding: EdgeInsets.fromLTRB(
@@ -486,6 +501,15 @@ class _ContentFooter extends StatelessWidget {
                     label: 'Mark as Complete',
                     onTap: controller.markCurrentComplete,
                     icon: Icons.check_rounded,
+                  ),
+                )
+              else if (isVideo && onWatchAgain != null)
+                Expanded(
+                  flex: 2,
+                  child: _PrimaryButton(
+                    label: 'Watch Again',
+                    onTap: onWatchAgain!,
+                    icon: Icons.replay_rounded,
                   ),
                 )
               else
