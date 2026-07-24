@@ -69,4 +69,6 @@ class AppRoutesNames {
   static const String coursePlayerScreen = "/CoursePlayerScreen";
   static const String quizScreen = "/QuizScreen";
   static const String instructorProfileScreen = "/InstructorProfileScreen";
+  static const String privacyPolicyScreen = "/PrivacyPolicyScreen";
+  static const String termsScreen = "/TermsScreen";
 }

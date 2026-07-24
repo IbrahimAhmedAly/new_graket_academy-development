@@ -10,6 +10,7 @@ import 'controller/home_controller/courses_controller.dart';
 import 'controller/home_controller/home_controller.dart';
 import 'controller/my_courses_controller.dart';
 import 'controller/notifications_controller.dart';
+import 'controller/policy_controller.dart';
 import 'controller/profile_controller.dart';
 import 'core/class/data_request.dart';
 
@@ -27,6 +28,7 @@ class AppBinding extends Bindings {
  Get.lazyPut(() => BasketController(),fenix: true);
  Get.lazyPut(() => MyCoursesController(),fenix: true);
  Get.lazyPut(() => NotificationsController(),fenix: true);
+ Get.lazyPut(() => PolicyController(),fenix: true);
  Get.lazyPut(() => ProfileController(),fenix: true);
 
 

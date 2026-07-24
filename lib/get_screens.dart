@@ -14,7 +14,9 @@ import 'package:new_graket_acadimy/view/new_screens/onboarding/onboard_screen.da
 import 'package:new_graket_acadimy/view/new_screens/other/courses_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/other/enter_code_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/other/notifications_screen.dart';
+import 'package:new_graket_acadimy/view/new_screens/other/policy_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/quiz/quiz_screen.dart';
+import 'package:new_graket_acadimy/controller/policy_controller.dart';
 
 import 'core/middleware/app_middleware.dart';
 
@@ -86,6 +88,16 @@ List<GetPage<dynamic>> getScreens = [
   GetPage(
       name: AppRoutesNames.instructorProfileScreen,
       page: () => const InstructorProfileScreen(),
+      transition: Transition.rightToLeft,
+      transitionDuration: const Duration(milliseconds: 350)),
+  GetPage(
+      name: AppRoutesNames.privacyPolicyScreen,
+      page: () => const PolicyScreen(type: PolicyType.privacy),
+      transition: Transition.rightToLeft,
+      transitionDuration: const Duration(milliseconds: 350)),
+  GetPage(
+      name: AppRoutesNames.termsScreen,
+      page: () => const PolicyScreen(type: PolicyType.terms),
       transition: Transition.rightToLeft,
       transitionDuration: const Duration(milliseconds: 350)),
 ];

@@ -42,6 +42,7 @@ class AppStrings {
   static const String setting = "Setting";
   static const String support = "Help & Support";
   static const String privacy = "Privacy Policy";
+  static const String terms = "Terms and Conditions";
   static const String contactUs = "Contact Us";
   static const String logOut = "Log Out ";
   static const String notifications = "Notifications";
@@ -239,6 +240,15 @@ class AppStrings {
   static const String couponDiscount = "couponDiscount";
   static const String currency = "currency";
   static const String back = "back";
+
+  /// notifications
+  static const String today = "Today";
+  static const String yesterday = "Yesterday";
+  static const String unknown = "Unknown";
+  static const String markAllAsRead = "Mark all as read";
+  static const String noNotifications = "No notifications yet";
+  static const String youAreAllCaughtUp = "You're all caught up!";
+  static const String deleteNotification = "Delete";
 
   /// shared keys
 }

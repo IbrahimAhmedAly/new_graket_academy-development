@@ -28,4 +28,36 @@ class NotificationsData {
     );
     return response.fold((l) => l, (r) => r);
   }
+
+  Future<dynamic> markAsRead({
+    required String id,
+    required String token,
+  }) async {
+    final response = await dataRequest.postDataJsonBody(
+      AppApis.markAsRead(id),
+      {},
+      token: token,
+    );
+    return response.fold((l) => l, (r) => r);
+  }
+
+  Future<dynamic> markAllAsRead({required String token}) async {
+    final response = await dataRequest.postDataJsonBody(
+      AppApis.markAllAsRead,
+      {},
+      token: token,
+    );
+    return response.fold((l) => l, (r) => r);
+  }
+
+  Future<dynamic> deleteNotification({
+    required String id,
+    required String token,
+  }) async {
+    final response = await dataRequest.deleteData(
+      AppApis.deleteNotification(id),
+      token: token,
+    );
+    return response.fold((l) => l, (r) => r);
+  }
 }

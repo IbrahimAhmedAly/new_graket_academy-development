@@ -9,6 +9,7 @@ import 'package:new_graket_acadimy/core/constants/app_strings.dart';
 import 'package:new_graket_acadimy/core/constants/assets_path.dart';
 import 'package:new_graket_acadimy/core/constants/colors.dart';
 import 'package:new_graket_acadimy/core/debug_print.dart';
+import 'package:new_graket_acadimy/routing/app_routes.dart';
 import 'package:new_graket_acadimy/view/new_widgets/main_widgets/profileElement.dart';
 
 class Profile extends StatelessWidget {
@@ -320,7 +321,15 @@ class Profile extends StatelessWidget {
                       elementName: AppStrings.privacy,
                       icon: Icons.shield_outlined,
                       iconColor: AppColor.priceColor,
-                      onTap: () => appPrint("privacy"),
+                      onTap: () =>
+                          Get.toNamed(AppRoutesNames.privacyPolicyScreen),
+                    ),
+                    const _MenuDivider(),
+                    Profileelement(
+                      elementName: AppStrings.terms,
+                      icon: Icons.description_outlined,
+                      iconColor: AppColor.primaryColor,
+                      onTap: () => Get.toNamed(AppRoutesNames.termsScreen),
                     ),
                   ],
                 ),
