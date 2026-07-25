@@ -304,6 +304,27 @@ class Profile extends StatelessWidget {
 
               SizedBox(height: AppHeight.h24),
 
+              // ── Learning section ──
+              // Progress gets its own group rather than sitting among the
+              // settings rows: it is the thing a student comes here to check.
+              _SectionTitle(title: "Learning"),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: AppPadding.pad24),
+                child: _MenuCard(
+                  children: [
+                    Profileelement(
+                      elementName: "My Progress",
+                      icon: Icons.insights_rounded,
+                      iconColor: AppColor.primaryColor,
+                      onTap: () =>
+                          Get.toNamed(AppRoutesNames.progressDashboardScreen),
+                    ),
+                  ],
+                ),
+              ),
+
+              SizedBox(height: AppHeight.h24),
+
               // ── General section ──
               _SectionTitle(title: "General"),
               Padding(

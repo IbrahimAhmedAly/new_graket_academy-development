@@ -45,6 +45,10 @@ dependencies:
   http: ^1.6.0
   intl: ^0.20.2
   lottie: ^3.3.2
+  # Bar charts for the weekly activity view. The circular progress ring and the
+  # activity heat map are hand-drawn with CustomPainter instead, so they can
+  # follow the app's gradient styling exactly.
+  fl_chart: ^0.69.2
   phone_form_field: ^10.0.17
   screen_protector: ^1.4.12
   shared_preferences: ^2.5.4

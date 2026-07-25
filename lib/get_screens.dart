@@ -2,6 +2,7 @@ import 'package:get/get_navigation/src/routes/get_route.dart';
 import 'package:get/get_navigation/src/routes/transitions_type.dart';
 import 'package:new_graket_acadimy/routing/app_routes.dart';
 import 'package:new_graket_acadimy/view/new_screens/auth/login_screen.dart';
+import 'package:new_graket_acadimy/view/new_screens/reports/progress_dashboard_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/auth/select_education_level_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/auth/select_grade_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/auth/sign_up_screen.dart';
@@ -63,6 +64,11 @@ List<GetPage<dynamic>> getScreens = [
       page: () => HomeMainScreen(),
       transition: Transition.fadeIn,
       transitionDuration: const Duration(milliseconds: 700)),
+  GetPage(
+      name: AppRoutesNames.progressDashboardScreen,
+      page: () => const ProgressDashboardScreen(),
+      transition: Transition.rightToLeft,
+      transitionDuration: const Duration(milliseconds: 350)),
   GetPage(
       name: AppRoutesNames.coursesScreen,
       page: () => CoursesScreen(),

@@ -11,6 +11,7 @@ import 'package:new_graket_acadimy/model/courses/get_all_courses_model.dart'
     as course_model;
 import 'package:new_graket_acadimy/view/new_widgets/other_widgets/categorized_course_item.dart';
 import 'package:new_graket_acadimy/view/new_widgets/main_widgets/notification_button.dart';
+import 'package:new_graket_acadimy/view/new_widgets/dashboard_widgets/progress_teaser_banner.dart';
 import 'package:new_graket_acadimy/view/new_widgets/main_widgets/home_banner_carousel.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -230,6 +231,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: HomeBannerCarousel(banners: controller.banners),
                 ),
               ],
+
+              // ── Progress entry point ──
+              SizedBox(height: AppHeight.h16),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: AppPadding.pad16),
+                child: const ProgressTeaserBanner(),
+              ),
 
               // ── All Courses ──
               _buildSectionHeader(

@@ -134,5 +134,30 @@ class AppApis {
   static const String videoSubscription =
       '$domain/video-subscription/redeem-code';
   static const String myVideos = '$domain/video-subscription';
+
+  /// ── Activity tracking ────────────────────────────────────────────────
+  /// Feeds the student's progress dashboard. Everything reported there is
+  /// derived from these events, so a screen that fails to emit them simply
+  /// goes unreported — it never guesses.
+  static const String trackVideoProgress = '$domain/tracking/video-progress';
+  static String getVideoWatchProgress(String contentId) =>
+      '$domain/tracking/video-progress/$contentId';
+  static const String startContentView = '$domain/tracking/content-view/start';
+  static const String endContentView = '$domain/tracking/content-view/end';
+  static const String startSession = '$domain/tracking/session/start';
+  static const String sessionHeartbeat = '$domain/tracking/session/heartbeat';
+  static const String endSession = '$domain/tracking/session/end';
+
+  /// ── Progress reports ─────────────────────────────────────────────────
+  /// Aggregations over the tracked activity above.
+  static String reportsDashboard(int tzOffsetMinutes) =>
+      '$domain/reports/dashboard?tzOffsetMinutes=$tzOffsetMinutes';
+  static const String reportsQuizAnalytics = '$domain/reports/quiz-analytics';
+  static const String reportsSuggestions = '$domain/reports/suggestions';
+  static const String reportsRewards = '$domain/reports/rewards';
+  static String reportsMission(int tzOffsetMinutes) =>
+      '$domain/reports/mission?tzOffsetMinutes=$tzOffsetMinutes';
+  static String reportsInsights(int tzOffsetMinutes) =>
+      '$domain/reports/insights?tzOffsetMinutes=$tzOffsetMinutes';
   //    http://92.113.27.193:8086/part/chapter/$chapterId
 }

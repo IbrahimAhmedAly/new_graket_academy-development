@@ -13,7 +13,9 @@ import 'controller/my_courses_controller.dart';
 import 'controller/notifications_controller.dart';
 import 'controller/policy_controller.dart';
 import 'controller/profile_controller.dart';
+import 'controller/reports/progress_dashboard_controller.dart';
 import 'core/class/data_request.dart';
+import 'core/services/study_session_service.dart';
 
 class AppBinding extends Bindings {
   @override
@@ -32,9 +34,15 @@ class AppBinding extends Bindings {
  Get.lazyPut(() => NotificationsController(),fenix: true);
  Get.lazyPut(() => PolicyController(),fenix: true);
  Get.lazyPut(() => ProfileController(),fenix: true);
+ Get.lazyPut(() => ProgressDashboardController(),fenix: true);
 
 
     Get.put(DataRequest());
+
+    // Must come after DataRequest — the session service resolves it eagerly.
+    // Opens a study session immediately and observes app lifecycle from here
+    // on, so time on task is recorded without any screen having to opt in.
+    Get.put(StudySessionService()).init();
 
   }
 

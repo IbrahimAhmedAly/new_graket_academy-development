@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:new_graket_acadimy/core/class/request_status.dart';
 import 'package:new_graket_acadimy/core/constants/app_strings.dart';
+import 'package:new_graket_acadimy/core/services/study_session_service.dart';
 import 'package:new_graket_acadimy/data/auth_data/login_data.dart';
 import 'package:new_graket_acadimy/routing/app_routes.dart';
 
@@ -340,6 +341,12 @@ class LoginControllerImpl extends LoginController {
 
   @override
   void goToHomeScreen() {
+    // Open a study session now that a token exists. The service starts at app
+    // launch, when a signed-out user has nothing to attribute time to, so a
+    // fresh login has to kick it off explicitly.
+    if (Get.isRegistered<StudySessionService>()) {
+      Get.find<StudySessionService>().startSession();
+    }
     Get.offAllNamed(AppRoutesNames.mainScreen);
   }
 

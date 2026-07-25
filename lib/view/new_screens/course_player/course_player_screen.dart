@@ -8,6 +8,8 @@ import 'package:new_graket_acadimy/core/class/request_status.dart';
 import 'package:new_graket_acadimy/core/constants/app_dimentions.dart';
 import 'package:new_graket_acadimy/core/constants/app_strings.dart';
 import 'package:new_graket_acadimy/core/constants/colors.dart';
+import 'package:new_graket_acadimy/core/services/content_view_tracker.dart';
+import 'package:new_graket_acadimy/core/services/video_watch_tracker.dart';
 import 'package:new_graket_acadimy/model/courses/get_course_by_id_model.dart';
 import 'package:new_graket_acadimy/routing/app_routes.dart';
 import 'package:new_graket_acadimy/view/new_screens/course_player/notes_bottom_sheet.dart';
@@ -30,6 +32,17 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen> {
   String? _activeVideoId;
   bool _finishedFired = false;
 
+  /// Records which parts of each video are actually played, so the dashboard
+  /// can report a real watch percentage rather than a completion checkbox.
+  final VideoWatchTracker _watchTracker = VideoWatchTracker();
+
+  /// Records opens and read depth for the item on screen.
+  final ContentViewTracker _viewTracker = ContentViewTracker();
+
+  /// The content whose view is currently open, so switching lessons closes the
+  /// previous one exactly once.
+  String? _trackedContentId;
+
   @override
   void initState() {
     super.initState();
@@ -38,6 +51,11 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen> {
 
   @override
   void dispose() {
+    // Flush before tearing down: whatever was watched up to this moment still
+    // counts, even though the screen is going away.
+    _watchTracker.dispose();
+    _viewTracker.end();
+
     _yt?.dispose();
     _yt = null;
     // Make sure we leave portrait + system UI in a good state, even if the
@@ -78,6 +96,41 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen> {
     return _yt;
   }
 
+  /// Opens tracking for the lesson now on screen, closing the previous one.
+  ///
+  /// Called from build, so the actual work is deferred to after the frame —
+  /// these are network calls and must not run during a build pass.
+  void _syncTrackedContent(dynamic item) {
+    final contentId = item?.content?.id?.toString();
+    if (contentId == null || contentId == _trackedContentId) return;
+
+    _trackedContentId = contentId;
+    final type = (item.content.type ?? '').toString().toUpperCase();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+
+      // Videos get their own segment-level tracker; every type also gets a
+      // view row so opens and dwell time are recorded uniformly.
+      if (type == 'VIDEO') {
+        await _watchTracker.attach(
+          contentId: contentId,
+          durationSec: (item.content.duration is int)
+              ? (item.content.duration as int) * 60
+              : null,
+        );
+      } else {
+        // Leaving a video for a non-video lesson: bank what was watched.
+        await _watchTracker.dispose();
+      }
+
+      await _viewTracker.start(
+        contentId: contentId,
+        type: type.isEmpty ? 'VIDEO' : type,
+      );
+    });
+  }
+
   YoutubePlayerController _createController(String id) {
     late final YoutubePlayerController controller;
     controller = YoutubePlayerController(
@@ -89,9 +142,24 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen> {
       ),
     )..addListener(() {
         // Ignore callbacks from a controller that has been swapped out.
-        if (!identical(_yt, controller) || _finishedFired) return;
-        if (controller.value.playerState == PlayerState.ended) {
+        if (!identical(_yt, controller)) return;
+
+        // Feed playback into the watch tracker. Only positions reported while
+        // actually playing become watched segments, so scrubbing through the
+        // timeline never counts as having watched it.
+        final value = controller.value;
+        _watchTracker.onTick(
+          positionSec: value.position.inMilliseconds / 1000,
+          isPlaying: value.isPlaying,
+          durationSec: value.metaData.duration.inSeconds > 0
+              ? value.metaData.duration.inSeconds
+              : null,
+        );
+
+        if (_finishedFired) return;
+        if (value.playerState == PlayerState.ended) {
           _finishedFired = true;
+          _watchTracker.onEnded();
           if (Get.isRegistered<CoursePlayerControllerImp>()) {
             Get.find<CoursePlayerControllerImp>().markCurrentComplete();
           }
@@ -164,6 +232,10 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen> {
             (item.content.type ?? '').toUpperCase() == 'VIDEO';
         final ytController =
             isVideoContent ? _ensureYtController(item.content.videoUrl) : null;
+
+        // Track the lesson the student moved to. Deferred to after the frame
+        // because it performs network calls and must not run during build.
+        _syncTrackedContent(item);
 
         Widget scaffold = PopScope(
           canPop: true,
@@ -328,6 +400,8 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen> {
           content: item.content,
           isCompleted: c.isCompleted(item.content.id ?? ''),
           onMarkComplete: c.markCurrentComplete,
+          onPdfRendered: _viewTracker.setTotalPages,
+          onPdfPageChanged: _viewTracker.onPageChanged,
         );
       case 'QUIZ':
         return _QuizLauncher(content: item.content, controller: c);
@@ -573,10 +647,18 @@ class _PdfViewer extends StatefulWidget {
   final bool isCompleted;
   final VoidCallback onMarkComplete;
 
+  /// Fires with the document's page count once it renders.
+  final void Function(int totalPages)? onPdfRendered;
+
+  /// Fires with the current page (0-based) as the student scrolls.
+  final void Function(int page)? onPdfPageChanged;
+
   const _PdfViewer({
     required this.content,
     required this.isCompleted,
     required this.onMarkComplete,
+    this.onPdfRendered,
+    this.onPdfPageChanged,
   });
 
   @override
@@ -678,6 +760,18 @@ class _PdfViewerState extends State<_PdfViewer> {
       pageFling: true,
       pageSnap: true,
       fitPolicy: FitPolicy.BOTH,
+      // Read depth: how far through the document the student actually got.
+      // Without these the only signal is "opened", which cannot distinguish
+      // skimming the first page from reading the whole thing.
+      onRender: (pages) {
+        if (pages != null && pages > 0) {
+          widget.onPdfRendered?.call(pages);
+        }
+      },
+      onPageChanged: (page, total) {
+        if (page != null) widget.onPdfPageChanged?.call(page);
+        if (total != null && total > 0) widget.onPdfRendered?.call(total);
+      },
     );
   }
 }

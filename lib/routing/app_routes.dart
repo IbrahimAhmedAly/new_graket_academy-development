@@ -63,6 +63,7 @@ class AppRoutesNames {
   static const String signUpScreen = "/signUpScreen";
   static const String signUpVerification = "/verificationScreen";
   static const String mainScreen = "/mainScreen";
+  static const String progressDashboardScreen = "/progressDashboardScreen";
   static const String notificationsScreen = "/NotificationsScreen";
   static const String forYouScreen = "/ForYouScreen";
   static const String coursesScreen = "/coursesScreen";
