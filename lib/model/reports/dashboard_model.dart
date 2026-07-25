@@ -75,9 +75,30 @@ class ProgressOverview {
   final int? averageQuizScore;
 
   final double studyHours;
+
+  /// Exact study time. Preferred over [studyHours] for display, which rounds to
+  /// a tenth and turns 20 real minutes into a meaningless "0.3h".
+  final int studySeconds;
+
   final int currentStreak;
   final int longestStreak;
   final int totalPoints;
+
+  /// Study time as "2h 15m" — or "15m" under an hour, where an "0h" prefix
+  /// would only read as "nothing studied".
+  String get studyTimeLabel {
+    final totalMinutes = studySeconds ~/ 60;
+    final hours = totalMinutes ~/ 60;
+    final minutes = totalMinutes % 60;
+
+    if (hours > 0 && minutes > 0) return '${hours}h ${minutes}m';
+    if (hours > 0) return '${hours}h';
+    if (minutes > 0) return '${minutes}m';
+
+    // Under a minute but non-zero: report the seconds rather than "0m", so a
+    // student who just started sees their time is being counted.
+    return studySeconds > 0 ? '${studySeconds}s' : '0m';
+  }
 
   ProgressOverview({
     required this.overallProgressPercent,
@@ -89,6 +110,7 @@ class ProgressOverview {
     required this.quizzesTaken,
     required this.averageQuizScore,
     required this.studyHours,
+    required this.studySeconds,
     required this.currentStreak,
     required this.longestStreak,
     required this.totalPoints,
@@ -105,6 +127,7 @@ class ProgressOverview {
         quizzesTaken: _int(json['quizzesTaken']),
         averageQuizScore: _intOrNull(json['averageQuizScore']),
         studyHours: _double(json['studyHours']),
+        studySeconds: _int(json['studySeconds']),
         currentStreak: _int(json['currentStreak']),
         longestStreak: _int(json['longestStreak']),
         totalPoints: _int(json['totalPoints']),

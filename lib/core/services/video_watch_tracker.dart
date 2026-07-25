@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import '../../data/tracking_data/tracking_data.dart';
 import '../class/data_request.dart';
 import '../class/request_status.dart';
+import '../debug/tracking_logger.dart';
 import '../constants/app_strings.dart';
 import 'services.dart';
 
@@ -64,8 +65,46 @@ class VideoWatchTracker {
         ? durationSec
         : null;
 
+    TrackLog.videoAttached(contentId, _durationSec);
+
     _flushTimer?.cancel();
     _flushTimer = Timer.periodic(_flushInterval, (_) => flush());
+
+    // Register the video immediately, before any playback.
+    //
+    // Without this, a video the student opens but never plays has no progress
+    // row at all, so reporting cannot tell "opened and watched nothing" apart
+    // from "never opened" — and an average across videos silently skips it.
+    // An empty segment list merges to a no-op server-side, so this establishes
+    // the row at 0% without inventing watch time.
+    await _register();
+  }
+
+  /// Creates the progress row for the attached video with no watch time.
+  ///
+  /// Failure is not retried: the next flush carries the same information, and
+  /// a missing row is only a reporting gap, never lost watch time.
+  Future<void> _register() async {
+    final contentId = _contentId;
+    if (contentId == null) return;
+
+    final token = _token;
+    if (token.isEmpty) return;
+
+    try {
+      await _trackingData.trackVideoProgress(
+        token: token,
+        contentId: contentId,
+        segments: const [],
+        positionSec: 0,
+        durationSec: _durationSec,
+        isReplay: false,
+        tzOffsetMinutes: DateTime.now().timeZoneOffset.inMinutes,
+      );
+      TrackLog.videoRegistered(contentId, _durationSec);
+    } catch (e) {
+      TrackLog.videoFailed('register: $e');
+    }
   }
 
   /// Feeds a player tick.
@@ -133,7 +172,10 @@ class VideoWatchTracker {
 
     _closeSegment();
 
-    if (_pending.isEmpty && !_pendingReplay) return;
+    if (_pending.isEmpty && !_pendingReplay) {
+      TrackLog.videoNothingToSend();
+      return;
+    }
 
     final token = _token;
     if (token.isEmpty) return;
@@ -144,6 +186,14 @@ class VideoWatchTracker {
     final wasReplay = _pendingReplay;
     _pending.clear();
     _pendingReplay = false;
+
+    TrackLog.videoFlush(
+      contentId: contentId,
+      segments: batch,
+      positionSec: _latestPosition.round(),
+      durationSec: _durationSec,
+      isReplay: wasReplay,
+    );
 
     try {
       final response = await _trackingData.trackVideoProgress(
@@ -156,12 +206,16 @@ class VideoWatchTracker {
         tzOffsetMinutes: DateTime.now().timeZoneOffset.inMinutes,
       );
 
-      if (!_isSuccess(response)) {
+      if (_isSuccess(response)) {
+        _logAck(response);
+      } else {
+        TrackLog.videoFailed('server rejected the batch');
         _requeue(batch, wasReplay);
       }
-    } catch (_) {
+    } catch (e) {
       // Keep the batch for the next attempt: the server merges segments, so a
       // resend cannot inflate watch time.
+      TrackLog.videoFailed(e);
       _requeue(batch, wasReplay);
     }
   }
@@ -214,6 +268,28 @@ class VideoWatchTracker {
         AppSharedPrefKeys.userTokenKey,
       ) ??
       '';
+
+  /// Logs the server's merged totals, which is where the union rule becomes
+  /// visible: the running total can be lower than the sum of what was sent.
+  void _logAck(dynamic response) {
+    try {
+      final body = response.$2;
+      if (body is! Map) return;
+      final data = body['data'];
+      if (data is! Map) return;
+      final inner = data['data'];
+      if (inner is! Map) return;
+
+      TrackLog.videoAck(
+        watchedSeconds: (inner['watchedSeconds'] as num?)?.round() ?? 0,
+        watchPercent: (inner['watchPercent'] as num?)?.round() ?? 0,
+        isCompleted: inner['isCompleted'] == true,
+        replayCount: (inner['replayCount'] as num?)?.round() ?? 0,
+      );
+    } catch (_) {
+      // Logging must never break a flush.
+    }
+  }
 
   bool _isSuccess(dynamic response) {
     if (response == null) return false;

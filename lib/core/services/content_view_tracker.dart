@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import '../../data/tracking_data/tracking_data.dart';
 import '../class/data_request.dart';
 import '../class/request_status.dart';
+import '../debug/tracking_logger.dart';
 import '../constants/app_strings.dart';
 import 'services.dart';
 
@@ -51,6 +52,9 @@ class ContentViewTracker {
       );
 
       _viewId = _extractViewId(response);
+      if (_viewId != null) {
+        TrackLog.viewStarted(type, contentId, totalPages);
+      }
     } catch (_) {
       // Tracking must never block a student from opening their material.
     }
@@ -89,6 +93,12 @@ class ContentViewTracker {
     try {
       await _trackingData.endContentView(
         token: token,
+        viewId: viewId,
+        durationSec: durationSec < 0 ? 0 : durationSec,
+        pagesRead: _furthestPage > 0 ? _furthestPage : null,
+        totalPages: _totalPages,
+      );
+      TrackLog.viewEnded(
         viewId: viewId,
         durationSec: durationSec < 0 ? 0 : durationSec,
         pagesRead: _furthestPage > 0 ? _furthestPage : null,

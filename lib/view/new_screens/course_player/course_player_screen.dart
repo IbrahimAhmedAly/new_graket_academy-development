@@ -133,38 +133,39 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen> {
 
   YoutubePlayerController _createController(String id) {
     late final YoutubePlayerController controller;
-    controller = YoutubePlayerController(
-      initialVideoId: id,
-      flags: const YoutubePlayerFlags(
-        autoPlay: false,
-        mute: false,
-        enableCaption: true,
-      ),
-    )..addListener(() {
-        // Ignore callbacks from a controller that has been swapped out.
-        if (!identical(_yt, controller)) return;
+    controller =
+        YoutubePlayerController(
+          initialVideoId: id,
+          flags: const YoutubePlayerFlags(
+            autoPlay: false,
+            mute: false,
+            enableCaption: true,
+          ),
+        )..addListener(() {
+          // Ignore callbacks from a controller that has been swapped out.
+          if (!identical(_yt, controller)) return;
 
-        // Feed playback into the watch tracker. Only positions reported while
-        // actually playing become watched segments, so scrubbing through the
-        // timeline never counts as having watched it.
-        final value = controller.value;
-        _watchTracker.onTick(
-          positionSec: value.position.inMilliseconds / 1000,
-          isPlaying: value.isPlaying,
-          durationSec: value.metaData.duration.inSeconds > 0
-              ? value.metaData.duration.inSeconds
-              : null,
-        );
+          // Feed playback into the watch tracker. Only positions reported while
+          // actually playing become watched segments, so scrubbing through the
+          // timeline never counts as having watched it.
+          final value = controller.value;
+          _watchTracker.onTick(
+            positionSec: value.position.inMilliseconds / 1000,
+            isPlaying: value.isPlaying,
+            durationSec: value.metaData.duration.inSeconds > 0
+                ? value.metaData.duration.inSeconds
+                : null,
+          );
 
-        if (_finishedFired) return;
-        if (value.playerState == PlayerState.ended) {
-          _finishedFired = true;
-          _watchTracker.onEnded();
-          if (Get.isRegistered<CoursePlayerControllerImp>()) {
-            Get.find<CoursePlayerControllerImp>().markCurrentComplete();
+          if (_finishedFired) return;
+          if (value.playerState == PlayerState.ended) {
+            _finishedFired = true;
+            _watchTracker.onEnded();
+            if (Get.isRegistered<CoursePlayerControllerImp>()) {
+              Get.find<CoursePlayerControllerImp>().markCurrentComplete();
+            }
           }
-        }
-      });
+        });
     return controller;
   }
 
@@ -228,10 +229,11 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen> {
         // YoutubePlayerBuilder — that lets the player replace the entire
         // screen in landscape/fullscreen, just like the YouTube app.
         final item = controller.currentContent;
-        final isVideoContent = item != null &&
-            (item.content.type ?? '').toUpperCase() == 'VIDEO';
-        final ytController =
-            isVideoContent ? _ensureYtController(item.content.videoUrl) : null;
+        final isVideoContent =
+            item != null && (item.content.type ?? '').toUpperCase() == 'VIDEO';
+        final ytController = isVideoContent
+            ? _ensureYtController(item.content.videoUrl)
+            : null;
 
         // Track the lesson the student moved to. Deferred to after the frame
         // because it performs network calls and must not run during build.
@@ -286,8 +288,10 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen> {
       backgroundColor: AppColor.scaffoldBg,
       elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new_rounded,
-            color: AppColor.textPrimary),
+        icon: const Icon(
+          Icons.arrow_back_ios_new_rounded,
+          color: AppColor.textPrimary,
+        ),
         onPressed: () => Get.back(),
       ),
       title: Text(
@@ -302,8 +306,10 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen> {
       actions: [
         // Notes for the current lesson
         IconButton(
-          icon: const Icon(Icons.sticky_note_2_outlined,
-              color: AppColor.textPrimary),
+          icon: const Icon(
+            Icons.sticky_note_2_outlined,
+            color: AppColor.textPrimary,
+          ),
           tooltip: 'Notes',
           onPressed: () {
             final item = c.currentContent;
@@ -423,8 +429,7 @@ class _InheritedYtPlayer extends InheritedWidget {
   const _InheritedYtPlayer({required this.player, required super.child});
 
   static Widget? playerOf(BuildContext context) {
-    final w = context
-        .dependOnInheritedWidgetOfExactType<_InheritedYtPlayer>();
+    final w = context.dependOnInheritedWidgetOfExactType<_InheritedYtPlayer>();
     return w?.player;
   }
 
@@ -483,12 +488,12 @@ class _LessonInfoBar extends StatelessWidget {
                     icon: Icons.check_rounded,
                   )
                 : (isVideo && onWatchAgain != null)
-                    ? _PrimaryButton(
-                        label: 'Watch Again',
-                        onTap: onWatchAgain!,
-                        icon: Icons.replay_rounded,
-                      )
-                    : const _CompletedChip(),
+                ? _PrimaryButton(
+                    label: 'Watch Again',
+                    onTap: onWatchAgain!,
+                    icon: Icons.replay_rounded,
+                  )
+                : const _CompletedChip(),
           ),
         ],
       ),
@@ -512,8 +517,11 @@ class _CompletedChip extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.check_circle_rounded,
-              color: AppColor.greenColor, size: 18),
+          const Icon(
+            Icons.check_circle_rounded,
+            color: AppColor.greenColor,
+            size: 18,
+          ),
           SizedBox(width: AppWidth.w8),
           Text(
             'Completed',
@@ -738,8 +746,11 @@ class _PdfViewerState extends State<_PdfViewer> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.picture_as_pdf_rounded,
-                size: 48, color: AppColor.textHint),
+            Icon(
+              Icons.picture_as_pdf_rounded,
+              size: 48,
+              color: AppColor.textHint,
+            ),
             SizedBox(height: AppHeight.h12),
             Text(
               _error ?? 'Could not open this PDF',
@@ -855,8 +866,11 @@ class _ExternalMediaView extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.open_in_new_rounded,
-                      color: Colors.white, size: 18),
+                  const Icon(
+                    Icons.open_in_new_rounded,
+                    color: Colors.white,
+                    size: 18,
+                  ),
                   SizedBox(width: AppWidth.w8),
                   Text(
                     buttonLabel,
@@ -901,78 +915,113 @@ class _QuizLauncher extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDone = controller.isCompleted(content.id ?? '');
+
+    // The stage above gives this a fixed height, and at larger text scales the
+    // icon, title, description and button together exceed it. Scrolling inside
+    // that box keeps every element reachable instead of clipping the button —
+    // and the icon shrinks first, since it carries no information the title
+    // does not already convey.
     return Container(
       color: AppColor.scaffoldBg,
-      padding: EdgeInsets.all(AppPadding.pad24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 96,
-            height: 96,
-            decoration: const BoxDecoration(
-              color: AppColor.primaryLight,
-              shape: BoxShape.circle,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxHeight < 340;
+          final circle = compact ? 64.0 : 96.0;
+
+          return SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: EdgeInsets.symmetric(
+              horizontal: AppPadding.pad24,
+              vertical: compact ? AppPadding.pad16 : AppPadding.pad24,
             ),
-            child: const Icon(Icons.quiz_rounded,
-                size: 48, color: AppColor.primaryColor),
-          ),
-          SizedBox(height: AppHeight.h20),
-          Text(
-            content.title ?? 'Quiz',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: AppTextSize.textSize18,
-              fontWeight: FontWeight.w800,
-              color: AppColor.textPrimary,
-            ),
-          ),
-          SizedBox(height: AppHeight.h8),
-          Text(
-            isDone
-                ? 'You already passed this quiz. You can retake it anytime.'
-                : 'Test your knowledge and unlock this lesson.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: AppTextSize.textSize13,
-              color: AppColor.textSecondary,
-              height: 1.5,
-            ),
-          ),
-          SizedBox(height: AppHeight.h24),
-          GestureDetector(
-            onTap: _openQuiz,
-            child: Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: AppPadding.pad24,
-                vertical: AppPadding.pad12,
+            child: ConstrainedBox(
+              // Fill the stage when there is room to spare, so the content
+              // stays vertically centred rather than hugging the top.
+              constraints: BoxConstraints(
+                minHeight:
+                    constraints.maxHeight -
+                    (compact ? AppPadding.pad16 : AppPadding.pad24) * 2,
               ),
-              decoration: BoxDecoration(
-                color: AppColor.primaryColor,
-                borderRadius: BorderRadius.circular(AppRadius.radius25),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    isDone ? Icons.refresh_rounded : Icons.play_arrow_rounded,
-                    color: Colors.white,
-                    size: 20,
+                  Container(
+                    width: circle,
+                    height: circle,
+                    decoration: const BoxDecoration(
+                      color: AppColor.primaryLight,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.quiz_rounded,
+                      size: compact ? 32 : 48,
+                      color: AppColor.primaryColor,
+                    ),
                   ),
-                  SizedBox(width: AppWidth.w8),
+                  SizedBox(height: compact ? AppHeight.h12 : AppHeight.h20),
                   Text(
-                    isDone ? 'Retake Quiz' : 'Start Quiz',
+                    content.title ?? 'Quiz',
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: AppTextSize.textSize14,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
+                      fontSize: AppTextSize.textSize18,
+                      fontWeight: FontWeight.w800,
+                      color: AppColor.textPrimary,
+                    ),
+                  ),
+                  SizedBox(height: AppHeight.h8),
+                  Text(
+                    isDone
+                        ? 'You already passed this quiz. You can retake it anytime.'
+                        : 'Test your knowledge and unlock this lesson.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: AppTextSize.textSize13,
+                      color: AppColor.textSecondary,
+                      height: 1.5,
+                    ),
+                  ),
+                  SizedBox(height: compact ? AppHeight.h16 : AppHeight.h24),
+                  GestureDetector(
+                    onTap: _openQuiz,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppPadding.pad24,
+                        vertical: AppPadding.pad12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColor.primaryColor,
+                        borderRadius: BorderRadius.circular(AppRadius.radius25),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isDone
+                                ? Icons.refresh_rounded
+                                : Icons.play_arrow_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                          SizedBox(width: AppWidth.w8),
+                          Text(
+                            isDone ? 'Retake Quiz' : 'Start Quiz',
+                            style: TextStyle(
+                              fontSize: AppTextSize.textSize14,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -1043,8 +1092,7 @@ class _InlineCurriculum extends StatelessWidget {
           final section = sections[i];
           final contents = section.contents ?? const [];
           return Theme(
-            data: Theme.of(context)
-                .copyWith(dividerColor: Colors.transparent),
+            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
             child: ExpansionTile(
               key: PageStorageKey('sec-${section.id ?? i}'),
               initiallyExpanded:
@@ -1058,15 +1106,17 @@ class _InlineCurriculum extends StatelessWidget {
                 ),
               ),
               children: contents.map((content) {
-                final idx = controller.allContents
-                    .indexWhere((c) => c.content.id == content.id);
+                final idx = controller.allContents.indexWhere(
+                  (c) => c.content.id == content.id,
+                );
                 final isAccessible = idx >= 0;
                 final isCurrent = idx == controller.currentIndex;
                 final isDone = controller.isCompleted(content.id ?? '');
                 return ListTile(
                   dense: true,
-                  onTap:
-                      isAccessible ? () => controller.goToContent(idx) : null,
+                  onTap: isAccessible
+                      ? () => controller.goToContent(idx)
+                      : null,
                   tileColor: isCurrent
                       ? AppColor.primaryLight.withValues(alpha: 0.5)
                       : null,
@@ -1081,8 +1131,7 @@ class _InlineCurriculum extends StatelessWidget {
                     content.title ?? '',
                     style: TextStyle(
                       fontSize: AppTextSize.textSize13,
-                      fontWeight:
-                          isCurrent ? FontWeight.w700 : FontWeight.w500,
+                      fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
                       color: isAccessible
                           ? AppColor.textPrimary
                           : AppColor.textHint,
@@ -1092,16 +1141,16 @@ class _InlineCurriculum extends StatelessWidget {
                     isDone
                         ? Icons.check_circle_rounded
                         : isCurrent
-                            ? Icons.play_circle_fill_rounded
-                            : isAccessible
-                                ? Icons.play_circle_outline_rounded
-                                : Icons.lock_rounded,
+                        ? Icons.play_circle_fill_rounded
+                        : isAccessible
+                        ? Icons.play_circle_outline_rounded
+                        : Icons.lock_rounded,
                     size: 18,
                     color: isDone
                         ? AppColor.greenColor
                         : isAccessible
-                            ? AppColor.primaryColor
-                            : AppColor.textHint,
+                        ? AppColor.primaryColor
+                        : AppColor.textHint,
                   ),
                 );
               }).toList(),
@@ -1205,8 +1254,7 @@ class _EmptyAccessView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.lock_rounded,
-                size: 56, color: AppColor.textHint),
+            const Icon(Icons.lock_rounded, size: 56, color: AppColor.textHint),
             SizedBox(height: AppHeight.h16),
             Text(
               'No accessible content',
@@ -1309,12 +1357,14 @@ void _showCourseCompletedDialog(BuildContext context) {
                     child: GestureDetector(
                       onTap: () => Navigator.of(ctx).pop(),
                       child: Container(
-                        padding:
-                            EdgeInsets.symmetric(vertical: AppPadding.pad12),
+                        padding: EdgeInsets.symmetric(
+                          vertical: AppPadding.pad12,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColor.primaryLight,
-                          borderRadius:
-                              BorderRadius.circular(AppRadius.radius12),
+                          borderRadius: BorderRadius.circular(
+                            AppRadius.radius12,
+                          ),
                         ),
                         child: Center(
                           child: Text(
@@ -1337,12 +1387,14 @@ void _showCourseCompletedDialog(BuildContext context) {
                         Get.back(); // close player
                       },
                       child: Container(
-                        padding:
-                            EdgeInsets.symmetric(vertical: AppPadding.pad12),
+                        padding: EdgeInsets.symmetric(
+                          vertical: AppPadding.pad12,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColor.primaryColor,
-                          borderRadius:
-                              BorderRadius.circular(AppRadius.radius12),
+                          borderRadius: BorderRadius.circular(
+                            AppRadius.radius12,
+                          ),
                         ),
                         child: Center(
                           child: Text(

@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import '../../data/tracking_data/tracking_data.dart';
 import '../class/data_request.dart';
 import '../class/request_status.dart';
+import '../debug/tracking_logger.dart';
 import '../constants/app_strings.dart';
 import 'services.dart';
 
@@ -62,6 +63,7 @@ class StudySessionService extends GetxService with WidgetsBindingObserver {
 
     switch (state) {
       case AppLifecycleState.resumed:
+        TrackLog.lifecycle('resumed');
         startSession();
         break;
       case AppLifecycleState.inactive:
@@ -71,6 +73,7 @@ class StudySessionService extends GetxService with WidgetsBindingObserver {
       case AppLifecycleState.paused:
       case AppLifecycleState.detached:
       case AppLifecycleState.hidden:
+        TrackLog.lifecycle('backgrounded');
         endSession();
         break;
     }
@@ -81,7 +84,10 @@ class StudySessionService extends GetxService with WidgetsBindingObserver {
     if (_sessionId != null || _starting) return;
 
     final token = _token;
-    if (token.isEmpty) return; // signed out: nothing to attribute time to
+    if (token.isEmpty) {
+      TrackLog.sessionSkipped('no auth token (signed out)');
+      return; // signed out: nothing to attribute time to
+    }
 
     _starting = true;
     try {
@@ -93,6 +99,7 @@ class StudySessionService extends GetxService with WidgetsBindingObserver {
       final id = _extractSessionId(response);
       if (id != null) {
         _sessionId = id;
+        TrackLog.sessionStarted(id, resumed: _wasResumed(response));
         _startHeartbeat();
       }
     } catch (_) {
@@ -116,6 +123,7 @@ class StudySessionService extends GetxService with WidgetsBindingObserver {
 
     try {
       await _trackingData.endSession(token: token, sessionId: id);
+      TrackLog.sessionEnded(id);
     } catch (_) {
       // The server's idle sweep will close it at the last heartbeat.
     }
@@ -141,6 +149,8 @@ class StudySessionService extends GetxService with WidgetsBindingObserver {
         token: token,
         sessionId: id,
       );
+
+      TrackLog.heartbeat(id, active: !_isInactive(response));
 
       // The server reports a session it has already closed (idle sweep) as
       // inactive. Reopen rather than beating against a dead session forever.
@@ -180,6 +190,19 @@ class StudySessionService extends GetxService with WidgetsBindingObserver {
     if (data is Map) {
       final inner = data['data'];
       if (inner is Map && inner['active'] == false) return true;
+    }
+    return false;
+  }
+
+  /// Whether the server reused an already-open session rather than creating
+  /// a new one.
+  bool _wasResumed(dynamic response) {
+    final body = _successBody(response);
+    if (body == null) return false;
+    final data = body['data'];
+    if (data is Map) {
+      final inner = data['data'];
+      if (inner is Map) return inner['resumed'] == true;
     }
     return false;
   }

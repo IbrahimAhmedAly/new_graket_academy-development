@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 
 import '../../core/class/request_status.dart';
 import '../../core/constants/app_strings.dart';
+import '../../core/debug/tracking_logger.dart';
 import '../../core/services/services.dart';
 import '../../data/reports_data/reports_data.dart';
 import '../../model/reports/dashboard_model.dart';
@@ -55,10 +56,15 @@ class ProgressDashboardController extends GetxController {
 
     final token = userToken;
     if (token.isEmpty) {
+      TrackLog.reportFailure('dashboard', 'no auth token');
       requestStatus = RequestStatus.failed;
       update();
       return;
     }
+
+    TrackLog.reportRequest(
+      'dashboard, mission, insights, rewards, suggestions, quiz-analytics',
+    );
 
     // Concurrent so the screen appears in one round trip rather than six.
     final results = await Future.wait([
@@ -77,6 +83,8 @@ class ProgressDashboardController extends GetxController {
     _parseSuggestions(results[4]);
     _parseQuizAnalytics(results[5]);
 
+    _logLoaded();
+
     // The dashboard payload is the only one the screen cannot render without.
     requestStatus = dashboard != null
         ? RequestStatus.success
@@ -89,6 +97,68 @@ class ProgressDashboardController extends GetxController {
   /// Named distinctly from GetxController's own `refresh()`, which forces a
   /// rebuild — this refetches, which is a different thing.
   Future<void> reload() => loadAll();
+
+  /// Prints what actually arrived, so a wrong figure on screen can be traced
+  /// to either the API or the widget without guessing.
+  void _logLoaded() {
+    final d = dashboard;
+    if (d == null) {
+      TrackLog.reportFailure('dashboard', 'payload missing or unparseable');
+      return;
+    }
+
+    TrackLog.dashboardSummary(
+      progressPercent: d.overview.overallProgressPercent,
+      videosWatched: d.overview.videosWatched,
+      totalVideos: d.overview.totalVideos,
+      quizzesTaken: d.overview.quizzesTaken,
+      averageQuizScore: d.overview.averageQuizScore,
+      studyHours: d.overview.studyHours,
+      streak: d.overview.currentStreak,
+      points: d.overview.totalPoints,
+      successIndex: d.successIndex.score,
+      successBand: d.successIndex.band,
+      subjects: d.subjects.length,
+      weeklyDays: d.weeklyActivity.length,
+      heatmapCells: d.heatmap.length,
+    );
+
+    TrackLog.reportSuccess(
+      'mission',
+      summary: '${missionTasks.where((t) => t.done).length}'
+          '/${missionTasks.length} tasks done',
+    );
+    TrackLog.reportSuccess('insights', summary: '${insights.length} items');
+    TrackLog.reportSuccess(
+      'rewards',
+      summary: rewards != null
+          ? '${rewards!.totalPoints} pts, '
+              '${rewards!.badgesEarned}/${rewards!.badgesAvailable} badges'
+          : 'not loaded',
+    );
+    TrackLog.reportSuccess(
+      'suggestions',
+      summary: '${suggestions.length} areas to review',
+    );
+    TrackLog.reportSuccess(
+      'quiz-analytics',
+      summary: quizAnalytics != null
+          ? '${quizAnalytics!.totalAttempts} attempts'
+          : 'not loaded',
+    );
+
+    if (d.ranking.available) {
+      TrackLog.reportSuccess(
+        'ranking',
+        summary: '${d.ranking.band} of ${d.ranking.cohortSize} students',
+      );
+    } else {
+      TrackLog.reportSuccess(
+        'ranking',
+        summary: 'unavailable — ${d.ranking.reason ?? "not enough data"}',
+      );
+    }
+  }
 
   // ── parsing ───────────────────────────────────────────────────────────
 

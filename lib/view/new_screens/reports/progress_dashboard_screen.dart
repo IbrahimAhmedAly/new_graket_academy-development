@@ -382,7 +382,7 @@ class _OverviewGrid extends StatelessWidget {
       ),
       StatTile(
         icon: Icons.schedule_rounded,
-        value: '${overview.studyHours}h',
+        value: overview.studyTimeLabel,
         label: 'Study time',
         accent: AppColor.primaryDark,
       ),
