@@ -2,7 +2,9 @@ import 'package:get/get.dart';
 import 'package:new_graket_acadimy/core/constants/app_strings.dart';
 import 'package:new_graket_acadimy/core/services/services.dart';
 import 'package:new_graket_acadimy/data/courses_data/courses_data.dart';
+import 'package:new_graket_acadimy/data/banners_data/banners_data.dart';
 import 'package:new_graket_acadimy/model/courses/get_all_courses_model.dart' as all_courses;
+import 'package:new_graket_acadimy/model/banners/get_banners_model.dart';
 import '../../core/class/request_status.dart';
 import '../../core/debug_print.dart';
 import '../../routing/app_routes.dart';
@@ -12,7 +14,9 @@ class HomeController extends GetxController {
   List<all_courses.Datum> recommendedCourses = [];
   List<all_courses.Datum> popularCourses = [];
   List<all_courses.Datum> allCourses = [];
+  List<BannerDatum> banners = [];
   final CoursesData coursesData = CoursesData(Get.find());
+  final BannersData bannersData = BannersData(Get.find());
   RequestStatus requestStatus = RequestStatus.loading;
   String userName = "";
   @override
@@ -20,6 +24,29 @@ class HomeController extends GetxController {
     super.onInit();
     getUserData();
     getHomeData();
+    getBanners();
+  }
+
+  /// Fetches active home banners. Failure is non-fatal — the home screen
+  /// renders fine without banners.
+  Future<void> getBanners() async {
+    final token =
+        myServices.sharedPreferences.getString(AppSharedPrefKeys.userTokenKey) ??
+            "";
+    try {
+      final response = await bannersData.getBanners(token: token);
+      if (response.$1 == RequestStatus.success &&
+          response.$2 is Map<String, dynamic>) {
+        final model =
+            GetBannersModel.fromJson(response.$2 as Map<String, dynamic>);
+        banners = (model.data?.data ?? [])
+            .where((b) => (b.image ?? '').isNotEmpty)
+            .toList();
+        update();
+      }
+    } catch (_) {
+      // keep banners empty on any parse/network failure
+    }
   }
 
   getUserData() {
