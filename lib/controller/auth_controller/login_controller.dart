@@ -333,7 +333,9 @@ class LoginControllerImpl extends LoginController {
 
   @override
   void goToRegisterScreen() {
-    Get.toNamed(AppRoutesNames.signUpScreen);
+    // Registration begins with the education onboarding steps; the register
+    // form is opened from there with the chosen level and grade.
+    Get.toNamed(AppRoutesNames.selectEducationLevelScreen);
   }
 
   @override

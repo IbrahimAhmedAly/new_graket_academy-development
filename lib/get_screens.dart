@@ -2,6 +2,8 @@ import 'package:get/get_navigation/src/routes/get_route.dart';
 import 'package:get/get_navigation/src/routes/transitions_type.dart';
 import 'package:new_graket_acadimy/routing/app_routes.dart';
 import 'package:new_graket_acadimy/view/new_screens/auth/login_screen.dart';
+import 'package:new_graket_acadimy/view/new_screens/auth/select_education_level_screen.dart';
+import 'package:new_graket_acadimy/view/new_screens/auth/select_grade_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/auth/sign_up_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/auth/varification_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/auth/welcome_screen.dart';
@@ -30,6 +32,17 @@ List<GetPage<dynamic>> getScreens = [
       page: () => const LoginScreen(),
       transition: Transition.downToUp,
       transitionDuration: const Duration(milliseconds: 700)),
+  // Education onboarding — step 1 (level) then step 2 (grade), before sign-up
+  GetPage(
+      name: AppRoutesNames.selectEducationLevelScreen,
+      page: () => const SelectEducationLevelScreen(),
+      transition: Transition.rightToLeft,
+      transitionDuration: const Duration(milliseconds: 350)),
+  GetPage(
+      name: AppRoutesNames.selectGradeScreen,
+      page: () => const SelectGradeScreen(),
+      transition: Transition.rightToLeft,
+      transitionDuration: const Duration(milliseconds: 350)),
   GetPage(
       name: AppRoutesNames.signUpScreen,
       page: () => SignUpScreen(),

@@ -151,7 +151,9 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
                   // ── Sign up button (outlined) ──
                   GestureDetector(
-                    onTap: () => context.pushNamed(AppRoutesNames.signUpScreen),
+                    // Sign-up now starts with the 2-step education onboarding
+                    onTap: () => context
+                        .pushNamed(AppRoutesNames.selectEducationLevelScreen),
                     child: Container(
                       width: double.infinity,
                       height: AppHeight.h40,

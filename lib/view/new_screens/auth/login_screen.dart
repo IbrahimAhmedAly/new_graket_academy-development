@@ -234,9 +234,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         GestureDetector(
                           onTap: () {
+                            // Sign-up starts with the 2-step education
+                            // onboarding, which then opens the register form.
                             Navigator.pushNamed(
                               context,
-                              AppRoutesNames.signUpScreen,
+                              AppRoutesNames.selectEducationLevelScreen,
                             );
                           },
                           child: Text(

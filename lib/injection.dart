@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 
 import 'controller/courses/code_controller_impl.dart';
+import 'controller/auth_controller/education_onboarding_controller.dart';
 import 'controller/auth_controller/login_controller.dart';
 import 'controller/auth_controller/signup_controller.dart';
 import 'controller/auth_controller/signup_varification_controller.dart';
@@ -20,6 +21,7 @@ class AppBinding extends Bindings {
 
  Get.lazyPut(() => LoginControllerImpl(),fenix: true);
  Get.lazyPut(() => SignUpControllerImpl(),fenix: true);
+ Get.lazyPut(() => EducationOnboardingController(),fenix: true);
  Get.lazyPut(() => SignupVarificationControllerImpl(),fenix: true);
  Get.lazyPut(() => HomeController(),fenix: true);
  Get.lazyPut(() => CoursesControllerImp(),fenix: true);

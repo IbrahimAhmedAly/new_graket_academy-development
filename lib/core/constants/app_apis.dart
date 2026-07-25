@@ -108,6 +108,11 @@ class AppApis {
   /// banners (home-screen carousel)
   static const String getBanners = '$domain/banners';
 
+  /// education levels & grades (onboarding pickers)
+  static const String getEducationLevels = '$domain/education-levels';
+  static String getGradesByLevel(String levelId) =>
+      '$domain/education-levels/$levelId/grades';
+
   static const String privacy = '$domain/privacy';
   static const String terms = '$domain/terms';
   static const String profile = '$domain/user';

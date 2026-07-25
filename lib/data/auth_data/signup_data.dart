@@ -9,14 +9,18 @@ class SignUpData {
       {required String email,
       required String displayedName,
       required String password,
-      required String serial}) async {
+      required String serial,
+      required String educationLevelId,
+      required String gradeId}) async {
     var response = await dataRequest.postDataJsonBody(
         AppApis.register,
         {
           "email": email,
           "password": password,
           "name": displayedName,
-          "serial": serial
+          "serial": serial,
+          "educationLevelId": educationLevelId,
+          "gradeId": gradeId,
         },
         token: null);
 
