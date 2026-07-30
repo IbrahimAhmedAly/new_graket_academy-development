@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:new_graket_acadimy/core/class/request_status.dart';
 import 'package:new_graket_acadimy/core/constants/app_strings.dart';
 import 'package:new_graket_acadimy/core/services/services.dart';
+import 'package:new_graket_acadimy/core/services/study_session_service.dart';
 import 'package:new_graket_acadimy/data/profile_data/profile_data.dart';
 import 'package:new_graket_acadimy/routing/app_routes.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -120,7 +121,14 @@ class ProfileController extends GetxController {
     update();
   }
 
-  void logout() {
+  Future<void> logout() async {
+    // Close the study session first — ending it needs the token that is about
+    // to be cleared, and an unclosed session would otherwise sit open until
+    // the server's idle sweep collects it.
+    if (Get.isRegistered<StudySessionService>()) {
+      await Get.find<StudySessionService>().handleLogout();
+    }
+
     if (Get.isRegistered<MyServices>()) {
       final prefs = Get.find<MyServices>().sharedPreferences;
       prefs

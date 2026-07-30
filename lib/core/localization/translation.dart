@@ -107,6 +107,8 @@ class MyTranslation extends Translations {
           //settings
           AppStrings.about :"معلومات عنا",
           AppStrings.language :"اللغة",
+          AppStrings.privacy :"سياسة الخصوصية",
+          AppStrings.terms :"الشروط والأحكام",
           AppStrings.contactUs :"تواصل معنا ",
           AppStrings.logout :"تسجيل خروج",
           AppStrings.changeLanguage :"تغيير اللغة",
@@ -179,6 +181,13 @@ class MyTranslation extends Translations {
           AppStrings.couponDiscount :"قيمهة تخفيض القسيمة",
           AppStrings.currency :"ج.م",
           AppStrings.back :"رجوع",
+          AppStrings.today :"اليوم",
+          AppStrings.yesterday :"أمس",
+          AppStrings.unknown :"غير معروف",
+          AppStrings.markAllAsRead :"تعيين الكل كمقروء",
+          AppStrings.noNotifications :"لا توجد إشعارات بعد",
+          AppStrings.youAreAllCaughtUp :"لقد اطّلعت على كل شيء!",
+          AppStrings.deleteNotification :"حذف",
         },
         "en": {
           "1": "choose language",
@@ -285,6 +294,8 @@ class MyTranslation extends Translations {
           //settings
           AppStrings.about :"About",
           AppStrings.language :"Language",
+          AppStrings.privacy :"Privacy Policy",
+          AppStrings.terms :"Terms and Conditions",
           AppStrings.contactUs :"Contact Us",
           AppStrings.logout :"Logout",
           AppStrings.changeLanguage :"Change language",
@@ -357,6 +368,13 @@ class MyTranslation extends Translations {
           AppStrings.couponDiscount :"Coupon discount",
           AppStrings.currency :"L.E",
           AppStrings.back :"Back",
+          AppStrings.today :"Today",
+          AppStrings.yesterday :"Yesterday",
+          AppStrings.unknown :"Unknown",
+          AppStrings.markAllAsRead :"Mark all as read",
+          AppStrings.noNotifications :"No notifications yet",
+          AppStrings.youAreAllCaughtUp :"You're all caught up!",
+          AppStrings.deleteNotification :"Delete",
 
         }
       };

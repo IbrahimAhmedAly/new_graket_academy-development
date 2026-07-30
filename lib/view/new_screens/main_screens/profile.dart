@@ -9,6 +9,7 @@ import 'package:new_graket_acadimy/core/constants/app_strings.dart';
 import 'package:new_graket_acadimy/core/constants/assets_path.dart';
 import 'package:new_graket_acadimy/core/constants/colors.dart';
 import 'package:new_graket_acadimy/core/debug_print.dart';
+import 'package:new_graket_acadimy/routing/app_routes.dart';
 import 'package:new_graket_acadimy/view/new_widgets/main_widgets/profileElement.dart';
 
 class Profile extends StatelessWidget {
@@ -303,6 +304,27 @@ class Profile extends StatelessWidget {
 
               SizedBox(height: AppHeight.h24),
 
+              // ── Learning section ──
+              // Progress gets its own group rather than sitting among the
+              // settings rows: it is the thing a student comes here to check.
+              _SectionTitle(title: "Learning"),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: AppPadding.pad24),
+                child: _MenuCard(
+                  children: [
+                    Profileelement(
+                      elementName: "My Progress",
+                      icon: Icons.insights_rounded,
+                      iconColor: AppColor.primaryColor,
+                      onTap: () =>
+                          Get.toNamed(AppRoutesNames.progressDashboardScreen),
+                    ),
+                  ],
+                ),
+              ),
+
+              SizedBox(height: AppHeight.h24),
+
               // ── General section ──
               _SectionTitle(title: "General"),
               Padding(
@@ -320,7 +342,15 @@ class Profile extends StatelessWidget {
                       elementName: AppStrings.privacy,
                       icon: Icons.shield_outlined,
                       iconColor: AppColor.priceColor,
-                      onTap: () => appPrint("privacy"),
+                      onTap: () =>
+                          Get.toNamed(AppRoutesNames.privacyPolicyScreen),
+                    ),
+                    const _MenuDivider(),
+                    Profileelement(
+                      elementName: AppStrings.terms,
+                      icon: Icons.description_outlined,
+                      iconColor: AppColor.primaryColor,
+                      onTap: () => Get.toNamed(AppRoutesNames.termsScreen),
                     ),
                   ],
                 ),

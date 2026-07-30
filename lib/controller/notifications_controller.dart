@@ -6,6 +6,7 @@ import 'package:new_graket_acadimy/core/functions/date_time_extensions.dart';
 import 'package:new_graket_acadimy/core/services/services.dart';
 import 'package:new_graket_acadimy/data/notifications_data/notifications_data.dart';
 import 'package:new_graket_acadimy/model/notifications/get_notifications_model.dart';
+import 'package:new_graket_acadimy/model/notifications/get_unread_notifications_count_model.dart';
 
 class NotificationsController extends GetxController {
   final NotificationsData notificationsData = NotificationsData(Get.find());
@@ -13,12 +14,18 @@ class NotificationsController extends GetxController {
 
   RequestStatus requestStatus = RequestStatus.loading;
   List<Map<String, dynamic>> elements = [];
+  int unreadCount = 0;
 
   @override
   void onInit() {
     super.onInit();
     getNotifications();
+    getUnreadCount();
   }
+
+  String _token() =>
+      myServices.sharedPreferences.getString(AppSharedPrefKeys.userTokenKey) ??
+      '';
 
   bool _isSameDay(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
@@ -37,11 +44,11 @@ class NotificationsController extends GetxController {
   }
 
   String _groupDate(DateTime? value) {
-    if (value == null) return 'Unknown';
+    if (value == null) return AppStrings.unknown.tr;
     final now = DateTime.now();
-    if (_isSameDay(value, now)) return 'Today';
+    if (_isSameDay(value, now)) return AppStrings.today.tr;
     final yesterday = now.subtract(const Duration(days: 1));
-    if (_isSameDay(value, yesterday)) return 'Yesterday';
+    if (_isSameDay(value, yesterday)) return AppStrings.yesterday.tr;
     return value.to_dd_MMM_yyyy;
   }
 
@@ -51,24 +58,11 @@ class NotificationsController extends GetxController {
     return result.isEmpty ? fallback : result;
   }
 
-  NotificationType _mapType(String type, String header) {
-    final normalized = type.toLowerCase();
-    if (normalized.contains('discount')) return NotificationType.discount;
-    if (normalized.contains('finish') || normalized.contains('complete')) {
-      return NotificationType.finishCourses;
-    }
-    if (normalized.contains('warn') || normalized.contains('alert')) {
-      return NotificationType.worning;
-    }
-    final headerLower = header.toLowerCase();
-    if (headerLower.contains('discount')) return NotificationType.discount;
-    if (headerLower.contains('finish') || headerLower.contains('complete')) {
-      return NotificationType.finishCourses;
-    }
-    if (headerLower.contains('warn') || headerLower.contains('alert')) {
-      return NotificationType.worning;
-    }
-    return NotificationType.newCourses;
+  bool _boolValue(dynamic value) {
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    if (value is String) return value.toLowerCase() == 'true';
+    return false;
   }
 
   List<Map<String, dynamic>> _normalizeList(dynamic rawList) {
@@ -81,18 +75,20 @@ class NotificationsController extends GetxController {
     return [];
   }
 
-  Future<void> getNotifications() async {
-    final token =
-        myServices.sharedPreferences.getString(AppSharedPrefKeys.userTokenKey) ??
-            '';
+  Future<void> getNotifications({bool silent = false}) async {
+    final token = _token();
     if (token.isEmpty) {
       requestStatus = RequestStatus.failed;
       update();
       return;
     }
 
-    requestStatus = RequestStatus.loading;
-    update();
+    // Show the skeleton only on a cold load. On a silent refresh (re-entering
+    // the screen while data is already visible) keep the current list up.
+    if (!silent || elements.isEmpty) {
+      requestStatus = RequestStatus.loading;
+      update();
+    }
 
     final response = await notificationsData.getNotifications(token: token);
     requestStatus = response.$1;
@@ -112,20 +108,28 @@ class NotificationsController extends GetxController {
         final data = raw['data'];
         if (data is Map && data['data'] is List) {
           items = _normalizeList(data['data']);
+        } else if (data is Map && data['data'] is Map) {
+          final inner = (data['data'] as Map)['data'];
+          if (inner is List) items = _normalizeList(inner);
         }
       }
 
       elements = items.map((item) {
         final header = _stringValue(
-            item['title'] ?? item['header'] ?? item['subject'],
-            fallback: 'Notification');
+          item['title'] ?? item['header'] ?? item['subject'],
+          fallback: 'Notification',
+        );
         final subHeader = _stringValue(
-            item['message'] ?? item['body'] ?? item['content'],
-            fallback: '');
+          item['description'] ?? item['message'] ?? item['body'] ??
+              item['content'],
+          fallback: '',
+        );
         final type = _stringValue(item['type'] ?? item['category']);
         final createdAt = _parseDate(item['createdAt'] ?? item['date']);
         return {
-          'notificationType': _mapType(type, header),
+          'id': _stringValue(item['id']),
+          'isRead': _boolValue(item['isRead']),
+          'notificationType': notificationTypeFromString(type),
           'header': header,
           'subHeader': subHeader,
           'date': _groupDate(createdAt),
@@ -133,60 +137,99 @@ class NotificationsController extends GetxController {
       }).toList();
     }
 
-    // Use static demo data when API returns nothing
-    if (elements.isEmpty) {
-      elements = _staticNotifications();
-    }
-
-    requestStatus = RequestStatus.success;
     update();
   }
 
-  /// Static placeholder data — remove once real API integration is done.
-  List<Map<String, dynamic>> _staticNotifications() {
-    return [
-      {
-        'notificationType': NotificationType.newCourses,
-        'header': 'New course available!',
-        'subHeader': 'UI/UX Design Fundamentals has been added. Check it out now.',
-        'date': 'Today',
-      },
-      {
-        'notificationType': NotificationType.discount,
-        'header': '30% off this week only',
-        'subHeader': 'Mobile App Development course is on sale. Don\'t miss it!',
-        'date': 'Today',
-      },
-      {
-        'notificationType': NotificationType.finishCourses,
-        'header': 'Congratulations!',
-        'subHeader': 'You completed the Flutter Basics course. Your certificate is ready.',
-        'date': 'Today',
-      },
-      {
-        'notificationType': NotificationType.worning,
-        'header': 'Your subscription expires soon',
-        'subHeader': 'Renew before April 15 to keep access to all your courses.',
-        'date': 'Yesterday',
-      },
-      {
-        'notificationType': NotificationType.newCourses,
-        'header': 'Recommended for you',
-        'subHeader': 'Based on your interests: Advanced React Patterns course.',
-        'date': 'Yesterday',
-      },
-      {
-        'notificationType': NotificationType.discount,
-        'header': 'Flash sale ended',
-        'subHeader': 'Thanks for shopping! Your order for 2 courses is confirmed.',
-        'date': 'Yesterday',
-      },
-      {
-        'notificationType': NotificationType.finishCourses,
-        'header': 'Keep it up!',
-        'subHeader': 'You\'re 80% through the Data Science course. Almost there!',
-        'date': '03 Apr 2026',
-      },
-    ];
+  Future<void> getUnreadCount() async {
+    final token = _token();
+    if (token.isEmpty) return;
+
+    final response = await notificationsData.getUnreadCount(token: token);
+    if (response.$1 == RequestStatus.success &&
+        response.$2 is Map<String, dynamic>) {
+      try {
+        final model = GetUnreadNotificationsCountModel.fromJson(
+          response.$2 as Map<String, dynamic>,
+        );
+        unreadCount = model.data?.data?.count ?? unreadCount;
+      } catch (_) {
+        // keep previous count on parse failure
+      }
+      update();
+    }
   }
+
+  /// Mark a single notification as read (optimistic).
+  Future<void> markRead(String id) async {
+    if (id.isEmpty) return;
+    final index = elements.indexWhere((e) => e['id'] == id);
+    if (index == -1) return;
+    // Already read → nothing to do.
+    if (elements[index]['isRead'] == true) return;
+
+    elements[index]['isRead'] = true;
+    if (unreadCount > 0) unreadCount--;
+    update();
+
+    final token = _token();
+    if (token.isEmpty) return;
+    final response = await notificationsData.markAsRead(id: id, token: token);
+    if (response.$1 != RequestStatus.success) {
+      // revert + resync on failure
+      await getNotifications();
+      await getUnreadCount();
+    }
+  }
+
+  /// Mark all notifications as read (optimistic).
+  Future<void> markAllRead() async {
+    if (unreadCount == 0) return;
+    for (final e in elements) {
+      e['isRead'] = true;
+    }
+    unreadCount = 0;
+    update();
+
+    final token = _token();
+    if (token.isEmpty) return;
+    final response = await notificationsData.markAllAsRead(token: token);
+    if (response.$1 != RequestStatus.success) {
+      await getNotifications();
+      await getUnreadCount();
+    }
+  }
+
+  /// Delete a single notification (optimistic).
+  Future<void> deleteOne(String id) async {
+    if (id.isEmpty) return;
+    final index = elements.indexWhere((e) => e['id'] == id);
+    if (index == -1) return;
+
+    final removed = elements[index];
+    final wasUnread = removed['isRead'] != true;
+    elements.removeAt(index);
+    if (wasUnread && unreadCount > 0) unreadCount--;
+    update();
+
+    final token = _token();
+    if (token.isEmpty) return;
+    final response =
+        await notificationsData.deleteNotification(id: id, token: token);
+    if (response.$1 != RequestStatus.success) {
+      await getNotifications();
+      await getUnreadCount();
+    }
+  }
+
+  /// Refresh both the list and the unread count.
+  /// [silent] keeps the current list visible instead of showing the skeleton
+  /// (used on screen re-entry and pull-to-refresh, which have their own
+  /// progress indicators).
+  Future<void> refreshAll({bool silent = true}) async {
+    await getNotifications(silent: silent);
+    await getUnreadCount();
+  }
+
+  /// Lightweight unread-count refresh, for the bell badge on other screens.
+  Future<void> refreshUnreadCount() => getUnreadCount();
 }

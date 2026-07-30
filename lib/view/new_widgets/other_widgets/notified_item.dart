@@ -89,21 +89,25 @@ class NotifiedItem extends StatelessWidget {
 
   _NotificationTypeConfig _typeConfig(NotificationType type) {
     return switch (type) {
-      NotificationType.discount => _NotificationTypeConfig(
+      NotificationType.promo => _NotificationTypeConfig(
           icon: Icons.local_offer_outlined,
           color: AppColor.priceColor,
         ),
-      NotificationType.finishCourses => _NotificationTypeConfig(
-          icon: Icons.check_circle_outline_rounded,
-          color: AppColor.greenColor,
+      NotificationType.reminder => _NotificationTypeConfig(
+          icon: Icons.notifications_active_outlined,
+          color: AppColor.starColor,
         ),
-      NotificationType.newCourses => _NotificationTypeConfig(
+      NotificationType.newCourse => _NotificationTypeConfig(
           icon: Icons.auto_awesome_outlined,
           color: AppColor.primaryColor,
         ),
-      NotificationType.worning => _NotificationTypeConfig(
-          icon: Icons.warning_amber_rounded,
-          color: AppColor.starColor,
+      NotificationType.achievement => _NotificationTypeConfig(
+          icon: Icons.emoji_events_outlined,
+          color: AppColor.greenColor,
+        ),
+      NotificationType.system => _NotificationTypeConfig(
+          icon: Icons.info_outline_rounded,
+          color: AppColor.textSecondary,
         ),
     };
   }

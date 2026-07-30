@@ -37,10 +37,13 @@ class SignUpScreen extends StatelessWidget {
                 children: [
                   SizedBox(height: AppHeight.h20),
 
-                  // ── Back button ──
+                  // ── Back button — returns to the grade step so the
+                  //    education selection isn't lost ──
                   GestureDetector(
-                    onTap: () => Navigator.pushNamedAndRemoveUntil(
-                        context, AppRoutesNames.welcomeScreen, (r) => false),
+                    onTap: () => Navigator.canPop(context)
+                        ? Navigator.pop(context)
+                        : Navigator.pushNamedAndRemoveUntil(context,
+                            AppRoutesNames.welcomeScreen, (r) => false),
                     child: Container(
                       width: 40,
                       height: 40,
@@ -78,6 +81,61 @@ class SignUpScreen extends StatelessWidget {
                       color: AppColor.textSecondary,
                     ),
                   ),
+
+                  // ── Chosen education level / grade ──
+                  if ((controller.educationLevelName ?? '').isNotEmpty) ...[
+                    SizedBox(height: AppHeight.h20),
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: AppPadding.pad16,
+                        vertical: AppPadding.pad12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColor.primaryLight,
+                        borderRadius:
+                            BorderRadius.circular(AppRadius.radius12),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.school_rounded,
+                            size: 18,
+                            color: AppColor.primaryColor,
+                          ),
+                          SizedBox(width: AppWidth.w8),
+                          Expanded(
+                            child: Text(
+                              [
+                                controller.educationLevelName,
+                                controller.gradeName,
+                              ].where((e) => (e ?? '').isNotEmpty).join(' • '),
+                              style: TextStyle(
+                                fontSize: AppTextSize.textSize13,
+                                fontWeight: FontWeight.w700,
+                                color: AppColor.primaryColor,
+                              ),
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () => Navigator.canPop(context)
+                                ? Navigator.pop(context)
+                                : null,
+                            child: Text(
+                              'Change',
+                              style: TextStyle(
+                                fontSize: AppTextSize.textSize13,
+                                fontWeight: FontWeight.w700,
+                                color: AppColor.primaryColor,
+                                decoration: TextDecoration.underline,
+                                decorationColor: AppColor.primaryColor,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
 
                   SizedBox(height: AppHeight.h40),
 

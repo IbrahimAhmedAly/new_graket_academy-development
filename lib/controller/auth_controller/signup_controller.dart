@@ -26,6 +26,13 @@ class SignUpControllerImpl extends SignUpController {
 
   Map<String, dynamic> signupDataMap = {};
   String? errorMessage;
+
+  /// Chosen in the two onboarding steps that precede this screen and
+  /// required by POST /auth/register.
+  String? educationLevelId;
+  String? gradeId;
+  String? educationLevelName;
+  String? gradeName;
   TextEditingController fullNameTextEditingController = TextEditingController();
   TextEditingController emailTextEditingController = TextEditingController();
   TextEditingController passwordTextEditingController = TextEditingController();
@@ -68,6 +75,15 @@ class SignUpControllerImpl extends SignUpController {
     signupData = SignUpData(dataRequest);
     serial = await getSerial();
 
+    // Education selection handed over by the onboarding steps
+    final args = Get.arguments;
+    if (args is Map) {
+      educationLevelId = args['educationLevelId']?.toString();
+      gradeId = args['gradeId']?.toString();
+      educationLevelName = args['educationLevelName']?.toString();
+      gradeName = args['gradeName']?.toString();
+    }
+
     fullNameTextEditingController.addListener(update);
     emailTextEditingController.addListener(update);
     passwordTextEditingController.addListener(update);
@@ -85,6 +101,14 @@ class SignUpControllerImpl extends SignUpController {
 
   @override
   void onPressSignUp() async {
+    // The onboarding steps must have supplied both ids; the API rejects
+    // a registration without them.
+    if ((educationLevelId ?? "").isEmpty || (gradeId ?? "").isEmpty) {
+      errorMessage = "Please select your education level and grade first";
+      update();
+      return;
+    }
+
     requestStatus = RequestStatus.loading;
     errorMessage = null;
     update();
@@ -94,6 +118,8 @@ class SignUpControllerImpl extends SignUpController {
       password: passwordTextEditingController.text,
       serial: serial ?? "",
       displayedName: fullNameTextEditingController.text,
+      educationLevelId: educationLevelId!,
+      gradeId: gradeId!,
     );
     requestStatus = response.$1;
     if (requestStatus == RequestStatus.success) {

@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 
 import 'controller/courses/code_controller_impl.dart';
+import 'controller/auth_controller/education_onboarding_controller.dart';
 import 'controller/auth_controller/login_controller.dart';
 import 'controller/auth_controller/signup_controller.dart';
 import 'controller/auth_controller/signup_varification_controller.dart';
@@ -10,8 +11,11 @@ import 'controller/home_controller/courses_controller.dart';
 import 'controller/home_controller/home_controller.dart';
 import 'controller/my_courses_controller.dart';
 import 'controller/notifications_controller.dart';
+import 'controller/policy_controller.dart';
 import 'controller/profile_controller.dart';
+import 'controller/reports/progress_dashboard_controller.dart';
 import 'core/class/data_request.dart';
+import 'core/services/study_session_service.dart';
 
 class AppBinding extends Bindings {
   @override
@@ -19,6 +23,7 @@ class AppBinding extends Bindings {
 
  Get.lazyPut(() => LoginControllerImpl(),fenix: true);
  Get.lazyPut(() => SignUpControllerImpl(),fenix: true);
+ Get.lazyPut(() => EducationOnboardingController(),fenix: true);
  Get.lazyPut(() => SignupVarificationControllerImpl(),fenix: true);
  Get.lazyPut(() => HomeController(),fenix: true);
  Get.lazyPut(() => CoursesControllerImp(),fenix: true);
@@ -27,10 +32,17 @@ class AppBinding extends Bindings {
  Get.lazyPut(() => BasketController(),fenix: true);
  Get.lazyPut(() => MyCoursesController(),fenix: true);
  Get.lazyPut(() => NotificationsController(),fenix: true);
+ Get.lazyPut(() => PolicyController(),fenix: true);
  Get.lazyPut(() => ProfileController(),fenix: true);
+ Get.lazyPut(() => ProgressDashboardController(),fenix: true);
 
 
     Get.put(DataRequest());
+
+    // Must come after DataRequest — the session service resolves it eagerly.
+    // Opens a study session immediately and observes app lifecycle from here
+    // on, so time on task is recorded without any screen having to opt in.
+    Get.put(StudySessionService()).init();
 
   }
 

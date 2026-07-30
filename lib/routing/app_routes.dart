@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:new_graket_acadimy/view/new_screens/auth/login_screen.dart';
+import 'package:new_graket_acadimy/view/new_screens/auth/select_education_level_screen.dart';
+import 'package:new_graket_acadimy/view/new_screens/auth/select_grade_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/auth/sign_up_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/auth/varification_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/auth/welcome_screen.dart';
@@ -24,6 +26,9 @@ Map<String, Widget Function(BuildContext)> routes = {
   AppRoutesNames.initialRoute: (context) => OnboardScreen(),
   AppRoutesNames.welcomeScreen: (context) => const WelcomeScreen(),
   AppRoutesNames.loginScreen: (context) => LoginScreen(),
+  AppRoutesNames.selectEducationLevelScreen: (context) =>
+      const SelectEducationLevelScreen(),
+  AppRoutesNames.selectGradeScreen: (context) => const SelectGradeScreen(),
   AppRoutesNames.signUpScreen: (context) => SignUpScreen(),
   AppRoutesNames.signUpVerification: (context) => VarificationScreen(),
   AppRoutesNames.mainScreen: (context) => HomeMainScreen(),
@@ -53,9 +58,12 @@ class AppRoutesNames {
   static const String onboardScreen = "/onboardScreen";
   static const String welcomeScreen = "/welcomeScreen";
   static const String loginScreen = "/LoginScreen";
+  static const String selectEducationLevelScreen = "/selectEducationLevelScreen";
+  static const String selectGradeScreen = "/selectGradeScreen";
   static const String signUpScreen = "/signUpScreen";
   static const String signUpVerification = "/verificationScreen";
   static const String mainScreen = "/mainScreen";
+  static const String progressDashboardScreen = "/progressDashboardScreen";
   static const String notificationsScreen = "/NotificationsScreen";
   static const String forYouScreen = "/ForYouScreen";
   static const String coursesScreen = "/coursesScreen";
@@ -69,4 +77,6 @@ class AppRoutesNames {
   static const String coursePlayerScreen = "/CoursePlayerScreen";
   static const String quizScreen = "/QuizScreen";
   static const String instructorProfileScreen = "/InstructorProfileScreen";
+  static const String privacyPolicyScreen = "/PrivacyPolicyScreen";
+  static const String termsScreen = "/TermsScreen";
 }

@@ -2,6 +2,9 @@ import 'package:get/get_navigation/src/routes/get_route.dart';
 import 'package:get/get_navigation/src/routes/transitions_type.dart';
 import 'package:new_graket_acadimy/routing/app_routes.dart';
 import 'package:new_graket_acadimy/view/new_screens/auth/login_screen.dart';
+import 'package:new_graket_acadimy/view/new_screens/reports/progress_dashboard_screen.dart';
+import 'package:new_graket_acadimy/view/new_screens/auth/select_education_level_screen.dart';
+import 'package:new_graket_acadimy/view/new_screens/auth/select_grade_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/auth/sign_up_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/auth/varification_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/auth/welcome_screen.dart';
@@ -14,7 +17,9 @@ import 'package:new_graket_acadimy/view/new_screens/onboarding/onboard_screen.da
 import 'package:new_graket_acadimy/view/new_screens/other/courses_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/other/enter_code_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/other/notifications_screen.dart';
+import 'package:new_graket_acadimy/view/new_screens/other/policy_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/quiz/quiz_screen.dart';
+import 'package:new_graket_acadimy/controller/policy_controller.dart';
 
 import 'core/middleware/app_middleware.dart';
 
@@ -28,6 +33,17 @@ List<GetPage<dynamic>> getScreens = [
       page: () => const LoginScreen(),
       transition: Transition.downToUp,
       transitionDuration: const Duration(milliseconds: 700)),
+  // Education onboarding — step 1 (level) then step 2 (grade), before sign-up
+  GetPage(
+      name: AppRoutesNames.selectEducationLevelScreen,
+      page: () => const SelectEducationLevelScreen(),
+      transition: Transition.rightToLeft,
+      transitionDuration: const Duration(milliseconds: 350)),
+  GetPage(
+      name: AppRoutesNames.selectGradeScreen,
+      page: () => const SelectGradeScreen(),
+      transition: Transition.rightToLeft,
+      transitionDuration: const Duration(milliseconds: 350)),
   GetPage(
       name: AppRoutesNames.signUpScreen,
       page: () => SignUpScreen(),
@@ -48,6 +64,11 @@ List<GetPage<dynamic>> getScreens = [
       page: () => HomeMainScreen(),
       transition: Transition.fadeIn,
       transitionDuration: const Duration(milliseconds: 700)),
+  GetPage(
+      name: AppRoutesNames.progressDashboardScreen,
+      page: () => const ProgressDashboardScreen(),
+      transition: Transition.rightToLeft,
+      transitionDuration: const Duration(milliseconds: 350)),
   GetPage(
       name: AppRoutesNames.coursesScreen,
       page: () => CoursesScreen(),
@@ -86,6 +107,16 @@ List<GetPage<dynamic>> getScreens = [
   GetPage(
       name: AppRoutesNames.instructorProfileScreen,
       page: () => const InstructorProfileScreen(),
+      transition: Transition.rightToLeft,
+      transitionDuration: const Duration(milliseconds: 350)),
+  GetPage(
+      name: AppRoutesNames.privacyPolicyScreen,
+      page: () => const PolicyScreen(type: PolicyType.privacy),
+      transition: Transition.rightToLeft,
+      transitionDuration: const Duration(milliseconds: 350)),
+  GetPage(
+      name: AppRoutesNames.termsScreen,
+      page: () => const PolicyScreen(type: PolicyType.terms),
       transition: Transition.rightToLeft,
       transitionDuration: const Duration(milliseconds: 350)),
 ];

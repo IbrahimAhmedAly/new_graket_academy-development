@@ -19,6 +19,20 @@ class NotificationsScreen extends StatefulWidget {
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
+  void initState() {
+    super.initState();
+    // Re-fetch every time the screen is opened. The controller is registered
+    // with `fenix: true` and survives navigation, so its `onInit` only runs
+    // once — without this, returning to the screen would show stale data.
+    final controller = Get.isRegistered<NotificationsController>()
+        ? Get.find<NotificationsController>()
+        : Get.put(NotificationsController());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.refreshAll();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return GetBuilder<NotificationsController>(
       init: Get.isRegistered<NotificationsController>()
@@ -65,6 +79,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           letterSpacing: -0.3,
                         ),
                       ),
+                      const Spacer(),
+                      if (controller.unreadCount > 0)
+                        GestureDetector(
+                          onTap: controller.markAllRead,
+                          child: Text(
+                            AppStrings.markAllAsRead.tr,
+                            style: TextStyle(
+                              fontSize: AppTextSize.textSize13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColor.primaryColor,
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -95,43 +122,66 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
 
     // Grouped list
-    return GroupedListView<Map<String, dynamic>, String>(
-      physics: const BouncingScrollPhysics(),
-      padding: EdgeInsets.only(bottom: AppPadding.pad40),
-      elements: controller.elements,
-      groupBy: (element) => element["date"]?.toString() ?? "",
-      groupComparator: (value1, value2) => value2.compareTo(value1),
-      itemComparator: (item1, item2) => (item1["header"]?.toString() ?? "")
-          .compareTo(item2["header"]?.toString() ?? ""),
-      order: GroupedListOrder.DESC,
-      useStickyGroupSeparators: false,
-      groupSeparatorBuilder: (String value) => Padding(
-        padding: EdgeInsets.only(
-          left: AppPadding.pad24,
-          right: AppPadding.pad24,
-          top: AppPadding.pad16,
-          bottom: AppPadding.pad4,
+    return RefreshIndicator(
+      color: AppColor.primaryColor,
+      onRefresh: controller.refreshAll,
+      child: GroupedListView<Map<String, dynamic>, String>(
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
         ),
-        child: Text(
-          value,
-          style: TextStyle(
-            fontSize: AppTextSize.textSize13,
-            fontWeight: FontWeight.w600,
-            color: AppColor.textHint,
-            letterSpacing: 0.3,
+        padding: EdgeInsets.only(bottom: AppPadding.pad40),
+        elements: controller.elements,
+        groupBy: (element) => element["date"]?.toString() ?? "",
+        groupComparator: (value1, value2) => value2.compareTo(value1),
+        itemComparator: (item1, item2) => (item1["header"]?.toString() ?? "")
+            .compareTo(item2["header"]?.toString() ?? ""),
+        order: GroupedListOrder.DESC,
+        useStickyGroupSeparators: false,
+        groupSeparatorBuilder: (String value) => Padding(
+          padding: EdgeInsets.only(
+            left: AppPadding.pad24,
+            right: AppPadding.pad24,
+            top: AppPadding.pad16,
+            bottom: AppPadding.pad4,
+          ),
+          child: Text(
+            value,
+            style: TextStyle(
+              fontSize: AppTextSize.textSize13,
+              fontWeight: FontWeight.w600,
+              color: AppColor.textHint,
+              letterSpacing: 0.3,
+            ),
           ),
         ),
+        itemBuilder: (context, element) {
+          final id = element["id"]?.toString() ?? "";
+          return Dismissible(
+            key: ValueKey(id.isNotEmpty ? id : element.hashCode),
+            direction: id.isEmpty
+                ? DismissDirection.none
+                : DismissDirection.endToStart,
+            onDismissed: (_) => controller.deleteOne(id),
+            background: Container(
+              alignment: AlignmentDirectional.centerEnd,
+              padding: EdgeInsets.symmetric(horizontal: AppPadding.pad24),
+              color: AppColor.starColor.withValues(alpha: 0.15),
+              child: Icon(
+                Icons.delete_outline_rounded,
+                color: AppColor.priceColor,
+              ),
+            ),
+            child: NotifiedItem(
+              headerName: element["header"]?.toString() ?? "",
+              subHeaderName: element["subHeader"]?.toString() ?? "",
+              notificationType: element["notificationType"] is NotificationType
+                  ? element["notificationType"] as NotificationType
+                  : NotificationType.system,
+              onPress: () => controller.markRead(id),
+            ),
+          );
+        },
       ),
-      itemBuilder: (context, element) {
-        return NotifiedItem(
-          headerName: element["header"]?.toString() ?? "",
-          subHeaderName: element["subHeader"]?.toString() ?? "",
-          notificationType: element["notificationType"] is NotificationType
-              ? element["notificationType"] as NotificationType
-              : NotificationType.newCourses,
-          onPress: () {},
-        );
-      },
     );
   }
 
@@ -157,7 +207,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ),
             SizedBox(height: AppHeight.h20),
             Text(
-              "You're all caught up!",
+              AppStrings.youAreAllCaughtUp.tr,
               style: TextStyle(
                 fontSize: AppTextSize.textSize18,
                 fontWeight: FontWeight.w700,
@@ -166,7 +216,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ),
             SizedBox(height: AppHeight.h8),
             Text(
-              "No new notifications right now.\nWe'll let you know when something arrives.",
+              AppStrings.noNotifications.tr,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: AppTextSize.textSize14,
