@@ -81,7 +81,10 @@ class ProfileController extends GetxController {
     requestStatus = RequestStatus.loading;
     update();
 
-    final response = await profileData.getProfile(token: token);
+    // GET /user/me — the old `/user` endpoint was never registered on the
+    // backend, so this call used to 404 and leave the screen on the
+    // SharedPreferences fallback.
+    final response = await profileData.getMe(token: token);
     final status = response.$1;
     if (status != RequestStatus.success || response.$2 is! Map<String, dynamic>) {
       requestStatus = RequestStatus.success;
@@ -120,6 +123,14 @@ class ProfileController extends GetxController {
     requestStatus = RequestStatus.success;
     update();
   }
+
+  /// Re-reads the profile. This is the single refresh path after an edit:
+  /// `EditProfileController.save()` calls it directly once the PATCH succeeds,
+  /// and only when this controller has really been instantiated. The old
+  /// `openEditProfile()` route-result wrapper was deleted — Settings opens the
+  /// edit screen with a bare `Get.toNamed`, so nothing ever awaited its result
+  /// and keeping it around only risked a second, duplicate fetch.
+  Future<void> refreshProfile() => fetchProfile();
 
   Future<void> logout() async {
     // Close the study session first — ending it needs the token that is about

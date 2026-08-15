@@ -14,10 +14,13 @@ import 'package:new_graket_acadimy/view/new_screens/instructor/instructor_profil
 import 'package:new_graket_acadimy/view/new_screens/main_screens/home_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/main_screens/main_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/onboarding/onboard_screen.dart';
+import 'package:new_graket_acadimy/view/new_screens/other/change_password_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/other/courses_screen.dart';
+import 'package:new_graket_acadimy/view/new_screens/other/edit_profile_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/other/enter_code_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/other/notifications_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/other/policy_screen.dart';
+import 'package:new_graket_acadimy/view/new_screens/other/settings_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/quiz/quiz_screen.dart';
 import 'package:new_graket_acadimy/controller/policy_controller.dart';
 
@@ -117,6 +120,23 @@ List<GetPage<dynamic>> getScreens = [
   GetPage(
       name: AppRoutesNames.termsScreen,
       page: () => const PolicyScreen(type: PolicyType.terms),
+      transition: Transition.rightToLeft,
+      transitionDuration: const Duration(milliseconds: 350)),
+  // Settings hub, reached from the profile tab, plus the two account screens
+  // it pushes.
+  GetPage(
+      name: AppRoutesNames.settingsScreen,
+      page: () => const SettingsScreen(),
+      transition: Transition.rightToLeft,
+      transitionDuration: const Duration(milliseconds: 350)),
+  GetPage(
+      name: AppRoutesNames.editProfileScreen,
+      page: () => const EditProfileScreen(),
+      transition: Transition.rightToLeft,
+      transitionDuration: const Duration(milliseconds: 350)),
+  GetPage(
+      name: AppRoutesNames.changePasswordScreen,
+      page: () => const ChangePasswordScreen(),
       transition: Transition.rightToLeft,
       transitionDuration: const Duration(milliseconds: 350)),
 ];

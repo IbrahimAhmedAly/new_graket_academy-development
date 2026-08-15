@@ -19,6 +19,23 @@ class LoginData {
     return response.fold((l) => l, (r) => r);
   }
 
+  /// POST /auth/change-password — requires the logged-in user's access token.
+  /// The session stays valid afterwards, so the caller must NOT clear tokens.
+  changePassword({
+    required String token,
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    var response = await dataRequest.postDataJsonBody(AppApis.changePassword, {
+      "currentPassword": currentPassword,
+      "newPassword": newPassword,
+      "confirmPassword": confirmPassword,
+    }, token: token);
+
+    return response.fold((l) => l, (r) => r);
+  }
+
   // postLoginWithGoogleData(String email, String username, String password,
   //     String userGooglePhoto, String phoneNumber) async {
   //   var response = await dataRequest.postData(AppApis.loginWithGoogle, {

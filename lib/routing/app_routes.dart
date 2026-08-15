@@ -18,7 +18,10 @@ import 'package:new_graket_acadimy/view/new_screens/payment/varify_payment_scree
 import '../view/new_screens/main_screens/my_course_screen.dart';
 import '../view/new_screens/course_player/course_player_screen.dart';
 import '../view/new_screens/instructor/instructor_profile_screen.dart';
+import '../view/new_screens/other/change_password_screen.dart';
+import '../view/new_screens/other/edit_profile_screen.dart';
 import '../view/new_screens/other/enter_code_screen.dart';
+import '../view/new_screens/other/settings_screen.dart';
 import '../view/new_screens/quiz/quiz_screen.dart';
 
 Map<String, Widget Function(BuildContext)> routes = {
@@ -47,6 +50,10 @@ Map<String, Widget Function(BuildContext)> routes = {
   AppRoutesNames.quizScreen: (context) => const QuizScreen(),
   AppRoutesNames.instructorProfileScreen: (context) =>
       const InstructorProfileScreen(),
+  AppRoutesNames.settingsScreen: (context) => const SettingsScreen(),
+  AppRoutesNames.editProfileScreen: (context) => const EditProfileScreen(),
+  AppRoutesNames.changePasswordScreen: (context) =>
+      const ChangePasswordScreen(),
 };
 
 class AppRoutesNames {
@@ -79,4 +86,7 @@ class AppRoutesNames {
   static const String instructorProfileScreen = "/InstructorProfileScreen";
   static const String privacyPolicyScreen = "/PrivacyPolicyScreen";
   static const String termsScreen = "/TermsScreen";
+  static const String settingsScreen = "/SettingsScreen";
+  static const String editProfileScreen = "/EditProfileScreen";
+  static const String changePasswordScreen = "/ChangePasswordScreen";
 }

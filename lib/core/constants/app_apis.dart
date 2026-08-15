@@ -11,6 +11,13 @@ class AppApis {
   static const String verifyResetCode = '$domain/auth/verify-reset-code';
   static const String resetPassword = '$domain/auth/reset-password';
 
+  /// Account APIS
+  /// The signed-in user's own record. `updateMe` is a PATCH (partial update),
+  /// so it goes through `DataRequest.patchDataJsonBody`, not `putDataJsonBody`.
+  static const String getMe = '$domain/user/me';
+  static const String updateMe = '$domain/user/me';
+  static const String changePassword = '$domain/auth/change-password';
+
   /// Courses APIS
   static const String getAllCouses = '$domain/course';
   static String getCourseByID(String courseId) => '$domain/course/$courseId';

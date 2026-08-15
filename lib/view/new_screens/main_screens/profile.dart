@@ -335,7 +335,7 @@ class Profile extends StatelessWidget {
                       elementName: AppStrings.setting,
                       icon: Icons.settings_outlined,
                       iconColor: AppColor.primaryColor,
-                      onTap: () => appPrint("Setting"),
+                      onTap: () => Get.toNamed(AppRoutesNames.settingsScreen),
                     ),
                     const _MenuDivider(),
                     Profileelement(

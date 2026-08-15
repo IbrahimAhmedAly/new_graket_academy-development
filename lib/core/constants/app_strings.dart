@@ -209,6 +209,38 @@ class AppStrings {
   static const String uploadImage = "uploadImage";
   static const String imageSizeErrorMessage = "imageSizeErrorMessage";
 
+  // Account (settings hub / edit profile / change password)
+  // NOTE: `settings`, `changePassword`, `newPassword`, `fullName`, `email`,
+  // `phoneNumber` and `cancel` already exist above and are reused as-is.
+  static const String account = "account";
+  static const String editProfile = "editProfile";
+  static const String preferences = "preferences";
+  static const String parentPhone = "parentPhone";
+  static const String educationLevel = "educationLevel";
+  static const String grade = "grade";
+  static const String saveChanges = "saveChanges";
+  static const String profileUpdated = "profileUpdated";
+  static const String currentPassword = "currentPassword";
+  static const String confirmNewPassword = "confirmNewPassword";
+  static const String passwordChanged = "passwordChanged";
+
+  // Edit profile
+  // NOTE: `valueCannotBeLessThan`, `valueCannotBeMoreThan`, `notValidPhoneNum`,
+  // `youAreOffline`, `unExpectedError` and `refresh` already exist above and are
+  // reused by the edit-profile form instead of being duplicated here.
+  static const String loginAgainToEditProfile = "loginAgainToEditProfile";
+  static const String couldNotLoadProfile = "couldNotLoadProfile";
+  static const String couldNotSaveChanges = "couldNotSaveChanges";
+  static const String fullNameRequired = "fullNameRequired";
+  static const String pickGradeForNewLevel = "pickGradeForNewLevel";
+  static const String nothingToUpdate = "nothingToUpdate";
+  static const String notSelected = "notSelected";
+  static const String pickEducationLevelFirst = "pickEducationLevelFirst";
+  static const String levelChangedPickGrade = "levelChangedPickGrade";
+  static const String noEducationLevels = "noEducationLevels";
+  static const String noGradesInLevel = "noGradesInLevel";
+  static const String availableGrades = "availableGrades";
+
   // Checkout
   static const String checkoutText = "checkoutText";
   static const String yourOrder = "yourOrder";

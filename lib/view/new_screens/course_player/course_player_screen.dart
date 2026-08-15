@@ -27,7 +27,8 @@ class CoursePlayerScreen extends StatefulWidget {
   State<CoursePlayerScreen> createState() => _CoursePlayerScreenState();
 }
 
-class _CoursePlayerScreenState extends State<CoursePlayerScreen> {
+class _CoursePlayerScreenState extends State<CoursePlayerScreen>
+    with WidgetsBindingObserver {
   YoutubePlayerController? _yt;
   String? _activeVideoId;
   bool _finishedFired = false;
@@ -46,11 +47,47 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     Get.put(CoursePlayerControllerImp());
+  }
+
+  /// Banks what has been tracked so far whenever the app leaves the screen.
+  ///
+  /// Leaving the foreground is the last moment tracking can be sure of
+  /// reaching the network: an app killed from the background never gets
+  /// another callback, and everything held locally — segments, the playhead,
+  /// how far into a PDF the student got — would go with it. Re-sending
+  /// segments is safe, because the server merges them into a union.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    switch (state) {
+      case AppLifecycleState.resumed:
+        _viewTracker.onForegrounded();
+        break;
+      case AppLifecycleState.inactive:
+        // Transient — a notification shade or an incoming call.
+        break;
+      case AppLifecycleState.paused:
+      case AppLifecycleState.hidden:
+        _watchTracker.flush();
+        _viewTracker.onBackgrounded();
+        break;
+      case AppLifecycleState.detached:
+        // The engine is going away, so the view will never be closed by a
+        // lesson switch or a dispose. Closing it here is the only chance to
+        // record its dwell time and read depth at all.
+        _watchTracker.flush();
+        _viewTracker.end();
+        break;
+    }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+
     // Flush before tearing down: whatever was watched up to this moment still
     // counts, even though the screen is going away.
     _watchTracker.dispose();
@@ -214,6 +251,10 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen> {
     final c = _yt;
     if (c == null) return;
     _finishedFired = false;
+    // Told to the tracker directly rather than left to be inferred from the
+    // player: this button is the one place where a re-watch is unambiguous,
+    // and a lesson can be marked complete without the video ever ending.
+    _watchTracker.markReplay();
     c.seekTo(Duration.zero);
     c.play();
   }
@@ -403,6 +444,11 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen> {
         );
       case 'PDF':
         return _PdfViewer(
+          // Without a per-document key the element for the previous PDF is
+          // reused: initState never runs again, so the old file stays on
+          // screen and its page callbacks are recorded against the new
+          // lesson's view.
+          key: ValueKey('pdf-${item.content.id}'),
           content: item.content,
           isCompleted: c.isCompleted(item.content.id ?? ''),
           onMarkComplete: c.markCurrentComplete,
@@ -662,6 +708,7 @@ class _PdfViewer extends StatefulWidget {
   final void Function(int page)? onPdfPageChanged;
 
   const _PdfViewer({
+    super.key,
     required this.content,
     required this.isCompleted,
     required this.onMarkComplete,
