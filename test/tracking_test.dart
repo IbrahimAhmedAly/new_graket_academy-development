@@ -127,6 +127,29 @@ void main() {
       );
       expect(covered, lessThan(20));
     });
+
+    test('seeking backward starts a new watched segment', () async {
+      final api = _FakeTrackingData();
+      final tracker = VideoWatchTracker(trackingData: api);
+
+      await tracker.attach(contentId: 'c1', durationSec: 600);
+      tracker.onTick(positionSec: 100, isPlaying: true);
+      tracker.onTick(positionSec: 102, isPlaying: true);
+      tracker.onTick(positionSec: 104, isPlaying: true);
+      tracker.onTick(positionSec: 106, isPlaying: true);
+      tracker.onTick(positionSec: 108, isPlaying: true);
+      tracker.onTick(positionSec: 110, isPlaying: true);
+      tracker.onTick(positionSec: 50, isPlaying: true); // rewound
+      tracker.onTick(positionSec: 52, isPlaying: true);
+      tracker.onTick(positionSec: 54, isPlaying: true);
+      tracker.onTick(positionSec: 55, isPlaying: true);
+      await tracker.flush();
+
+      expect(api.videoCalls.last.segments, [
+        {'start': 100, 'end': 110},
+        {'start': 50, 'end': 55},
+      ]);
+    });
   });
 
   group('content view tracker', () {

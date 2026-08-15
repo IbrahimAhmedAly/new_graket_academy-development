@@ -8,6 +8,7 @@ import 'package:new_graket_acadimy/core/class/request_status.dart';
 import 'package:new_graket_acadimy/core/constants/app_dimentions.dart';
 import 'package:new_graket_acadimy/core/constants/app_strings.dart';
 import 'package:new_graket_acadimy/core/constants/colors.dart';
+import 'package:new_graket_acadimy/core/functions/video_seek.dart';
 import 'package:new_graket_acadimy/core/services/content_view_tracker.dart';
 import 'package:new_graket_acadimy/core/services/video_watch_tracker.dart';
 import 'package:new_graket_acadimy/model/courses/get_course_by_id_model.dart';
@@ -29,6 +30,8 @@ class CoursePlayerScreen extends StatefulWidget {
 
 class _CoursePlayerScreenState extends State<CoursePlayerScreen>
     with WidgetsBindingObserver {
+  static const Duration _seekStep = Duration(seconds: 10);
+
   YoutubePlayerController? _yt;
   String? _activeVideoId;
   bool _finishedFired = false;
@@ -259,11 +262,39 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen>
     c.play();
   }
 
+  /// Moves the current lesson by [offset] without changing whether it was
+  /// playing. The player package starts playback automatically after seekTo,
+  /// so a paused video must be paused again explicitly.
+  void _seekBy(YoutubePlayerController controller, Duration offset) {
+    if (!identical(_yt, controller) || !controller.value.isReady) return;
+
+    final duration = controller.metadata.duration;
+    if (duration <= Duration.zero) return;
+
+    final wasPlaying = controller.value.isPlaying;
+    final target = clampedVideoSeekTarget(
+      currentPosition: controller.value.position,
+      offset: offset,
+      totalDuration: duration,
+    );
+    if (target == controller.value.position) return;
+
+    controller.seekTo(target);
+    if (!wasPlaying) controller.pause();
+  }
+
   @override
   Widget build(BuildContext context) {
     return GetBuilder<CoursePlayerControllerImp>(
       builder: (controller) {
         _maybeShowCompletion(controller);
+
+        // Keep the portrait control row usable on narrow phones. Fullscreen
+        // and wider layouts retain playback speed; compact portrait keeps the
+        // higher-priority seek, timeline, time, and fullscreen controls.
+        final compactVideoControls =
+            MediaQuery.sizeOf(context).width < 400 &&
+            MediaQuery.orientationOf(context) == Orientation.portrait;
 
         // Decide whether the current content is a YouTube video. If so we
         // spin up / reuse a controller and wrap the whole Scaffold in a
@@ -310,6 +341,38 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen>
                 playedColor: AppColor.primaryColor,
                 handleColor: AppColor.primaryColor,
               ),
+              // Keep explicit YouTube-style skips inside the player's own
+              // overlay so they work in both the embedded and fullscreen
+              // layouts. The timeline remains draggable for precise seeking.
+              actionsPadding: const EdgeInsets.symmetric(horizontal: 2),
+              bottomActions: [
+                _PlayerSeekButton(
+                  controller: ytController,
+                  offset: -_seekStep,
+                  tooltip: 'Rewind 10 seconds',
+                  icon: Icons.replay_10_rounded,
+                  onSeek: _seekBy,
+                ),
+                const CurrentPosition(),
+                const SizedBox(width: 4),
+                ProgressBar(
+                  isExpanded: true,
+                  colors: ProgressBarColors(
+                    playedColor: AppColor.primaryColor,
+                    handleColor: AppColor.primaryColor,
+                  ),
+                ),
+                const RemainingDuration(),
+                _PlayerSeekButton(
+                  controller: ytController,
+                  offset: _seekStep,
+                  tooltip: 'Forward 10 seconds',
+                  icon: Icons.forward_10_rounded,
+                  onSeek: _seekBy,
+                ),
+                if (!compactVideoControls) const PlaybackSpeedButton(),
+                const FullScreenButton(),
+              ],
             ),
             builder: (ctx, player) {
               // Inject the supplied player widget into the Scaffold via
@@ -484,10 +547,94 @@ class _InheritedYtPlayer extends InheritedWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
+//  Player seek controls — available in embedded and fullscreen modes.
+// ═══════════════════════════════════════════════════════════════
+/// A compact skip control that stays in sync with the YouTube controller.
+///
+/// Listening here matters because [YoutubePlayer] retains its action widgets
+/// while only its internal state rebuilds. It also lets the boundary button
+/// disable immediately at 0 or at the end of the video.
+class _PlayerSeekButton extends StatefulWidget {
+  final YoutubePlayerController controller;
+  final Duration offset;
+  final String tooltip;
+  final IconData icon;
+  final void Function(YoutubePlayerController, Duration) onSeek;
+
+  const _PlayerSeekButton({
+    required this.controller,
+    required this.offset,
+    required this.tooltip,
+    required this.icon,
+    required this.onSeek,
+  });
+
+  @override
+  State<_PlayerSeekButton> createState() => _PlayerSeekButtonState();
+}
+
+class _PlayerSeekButtonState extends State<_PlayerSeekButton> {
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_onControllerChanged);
+  }
+
+  @override
+  void didUpdateWidget(_PlayerSeekButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.controller, widget.controller)) {
+      oldWidget.controller.removeListener(_onControllerChanged);
+      widget.controller.addListener(_onControllerChanged);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_onControllerChanged);
+    super.dispose();
+  }
+
+  void _onControllerChanged() {
+    if (mounted) setState(() {});
+  }
+
+  bool get _canSeek {
+    final value = widget.controller.value;
+    final duration = widget.controller.metadata.duration;
+    if (!value.isReady || duration <= Duration.zero) return false;
+
+    return clampedVideoSeekTarget(
+          currentPosition: value.position,
+          offset: widget.offset,
+          totalDuration: duration,
+        ) !=
+        value.position;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: widget.tooltip,
+      onPressed: _canSeek
+          ? () => widget.onSeek(widget.controller, widget.offset)
+          : null,
+      icon: Icon(widget.icon),
+      color: Colors.white,
+      disabledColor: Colors.white38,
+      iconSize: 22,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints.tightFor(width: 44, height: 44),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
 //  Lesson info bar: section + title + a single action button
 //  (Mark as Complete / Watch Again). No prev/next — the user jumps
 //  between lessons from the curriculum list below.
 // ═══════════════════════════════════════════════════════════════
+
 class _LessonInfoBar extends StatelessWidget {
   final CoursePlayerControllerImp controller;
   final VoidCallback? onWatchAgain;

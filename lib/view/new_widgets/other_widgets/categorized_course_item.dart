@@ -12,6 +12,7 @@ class CategorizedCourseItem extends StatelessWidget {
   final double rate;
   final String totalTime;
   final void Function()? onTap;
+  final bool isGridLayout;
 
   const CategorizedCourseItem({
     super.key,
@@ -22,6 +23,7 @@ class CategorizedCourseItem extends StatelessWidget {
     required this.rate,
     required this.totalTime,
     this.onTap,
+    this.isGridLayout = false,
   });
 
   /// Height of the info section below the image.
@@ -35,7 +37,10 @@ class CategorizedCourseItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cardWidth = MediaQuery.of(context).size.width * 0.42;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final cardWidth = isGridLayout
+        ? (screenWidth - (AppPadding.pad20 * 2) - AppWidth.w5) / 2
+        : screenWidth * 0.42;
     final imageHeight = cardWidth * 0.65;
 
     return GestureDetector(
@@ -43,7 +48,9 @@ class CategorizedCourseItem extends StatelessWidget {
       child: Container(
         width: cardWidth,
         height: imageHeight + infoHeight(context),
-        margin: EdgeInsets.only(right: AppPadding.pad12),
+        margin: isGridLayout
+            ? EdgeInsets.zero
+            : EdgeInsets.only(right: AppPadding.pad12),
         decoration: BoxDecoration(
           color: AppColor.cardBg,
           borderRadius: BorderRadius.circular(AppRadius.radius15),
@@ -115,8 +122,9 @@ class CategorizedCourseItem extends StatelessWidget {
                       child: _Badge(
                         icon: Icons.access_time_rounded,
                         label: totalTime,
-                        backgroundColor:
-                            AppColor.textPrimary.withValues(alpha: 0.6),
+                        backgroundColor: AppColor.textPrimary.withValues(
+                          alpha: 0.6,
+                        ),
                         foregroundColor: AppColor.whiteColor,
                       ),
                     ),

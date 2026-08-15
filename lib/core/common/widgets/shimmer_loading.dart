@@ -78,6 +78,115 @@ class ShimmerCourseCard extends StatelessWidget {
   }
 }
 
+class _ShimmerGridCourseCard extends StatelessWidget {
+  const _ShimmerGridCourseCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cardWidth = constraints.maxWidth;
+        final imageHeight = cardWidth * 0.65;
+
+        return Container(
+          width: cardWidth,
+          height: constraints.maxHeight,
+          decoration: BoxDecoration(
+            color: AppColor.cardBg,
+            borderRadius: BorderRadius.circular(AppRadius.radius15),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ShimmerBox(
+                width: cardWidth,
+                height: imageHeight,
+                borderRadius: AppRadius.radius15,
+              ),
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppPadding.pad10,
+                    vertical: AppPadding.pad8,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      ShimmerBox(width: cardWidth * 0.72, height: 12),
+                      ShimmerBox(width: cardWidth * 0.42, height: 14),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Pulsing two-column course grid used by the full course-list screens.
+///
+/// The card is constrained by each grid cell (rather than using the horizontal
+/// home card's screen-relative width and trailing margin), avoiding overflow
+/// while retaining the same placeholder colors, proportions, and pulse.
+class CourseGridShimmerSkeleton extends StatefulWidget {
+  const CourseGridShimmerSkeleton({super.key});
+
+  @override
+  State<CourseGridShimmerSkeleton> createState() =>
+      _CourseGridShimmerSkeletonState();
+}
+
+class _CourseGridShimmerSkeletonState extends State<CourseGridShimmerSkeleton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+    _animation = Tween<double>(
+      begin: 0.4,
+      end: 1,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _animation,
+      child: GridView.builder(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: EdgeInsets.symmetric(
+          horizontal: AppPadding.pad20,
+          vertical: AppPadding.pad10,
+        ),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          mainAxisSpacing: AppWidth.w5,
+          crossAxisSpacing: AppWidth.w5,
+          childAspectRatio: 0.75,
+        ),
+        itemCount: 6,
+        itemBuilder: (context, index) => const _ShimmerGridCourseCard(),
+      ),
+    );
+  }
+}
+
 /// Full home screen skeleton: header shimmer + 3 section shimmers.
 class HomeShimmerSkeleton extends StatefulWidget {
   const HomeShimmerSkeleton({super.key});
@@ -98,9 +207,10 @@ class _HomeShimmerSkeletonState extends State<HomeShimmerSkeleton>
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     )..repeat(reverse: true);
-    _animation = Tween<double>(begin: 0.4, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _animation = Tween<double>(
+      begin: 0.4,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -149,8 +259,8 @@ class _HomeShimmerSkeletonState extends State<HomeShimmerSkeleton>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(
-                  height:
-                      MediaQuery.of(context).padding.top + AppHeight.h16),
+                height: MediaQuery.of(context).padding.top + AppHeight.h16,
+              ),
               // Header skeleton
               Row(
                 children: [
