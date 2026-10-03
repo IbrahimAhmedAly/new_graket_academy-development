@@ -94,6 +94,7 @@ class QuizCourse {
 class QuizQuestion {
   String? id;
   String? questionText;
+  String? imageUrl;
   int? order;
   int? points;
   List<QuizOption>? options;
@@ -101,6 +102,7 @@ class QuizQuestion {
   QuizQuestion({
     this.id,
     this.questionText,
+    this.imageUrl,
     this.order,
     this.points,
     this.options,
@@ -109,6 +111,7 @@ class QuizQuestion {
   factory QuizQuestion.fromJson(Map<String, dynamic> json) => QuizQuestion(
     id: json["id"],
     questionText: json["questionText"],
+    imageUrl: json["imageUrl"],
     order: json["order"],
     points: json["points"],
     options: json["options"] == null

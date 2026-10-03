@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:new_graket_acadimy/controller/quiz/quiz_controller.dart';
@@ -753,6 +754,44 @@ class _QuestionCard extends StatelessWidget {
                   ],
                 ),
                 SizedBox(height: AppHeight.h12),
+                if ((question.imageUrl ?? '').isNotEmpty) ...[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadius.radius12),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 220),
+                      child: CachedNetworkImage(
+                        imageUrl: question.imageUrl!,
+                        width: double.infinity,
+                        fit: BoxFit.contain,
+                        placeholder: (context, url) => Container(
+                          height: 120,
+                          color: AppColor.primaryLight,
+                          child: const Center(
+                            child: SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColor.primaryColor,
+                              ),
+                            ),
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => Container(
+                          height: 60,
+                          color: AppColor.scaffoldBg,
+                          child: const Center(
+                            child: Icon(
+                              Icons.broken_image_outlined,
+                              color: AppColor.textHint,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: AppHeight.h12),
+                ],
                 Text(
                   question.questionText ?? '',
                   style: TextStyle(

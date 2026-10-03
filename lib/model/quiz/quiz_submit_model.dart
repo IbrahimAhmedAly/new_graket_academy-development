@@ -113,6 +113,7 @@ class QuizSubmitResult {
 class QuizQuestionResult {
   String? questionId;
   String? questionText;
+  String? imageUrl;
   int? points;
   bool? isCorrect;
   QuizResultOption? selectedOption;
@@ -122,6 +123,7 @@ class QuizQuestionResult {
   QuizQuestionResult({
     this.questionId,
     this.questionText,
+    this.imageUrl,
     this.points,
     this.isCorrect,
     this.selectedOption,
@@ -133,6 +135,7 @@ class QuizQuestionResult {
       QuizQuestionResult(
         questionId: json["questionId"],
         questionText: json["questionText"],
+        imageUrl: json["imageUrl"],
         points: json["points"],
         isCorrect: json["isCorrect"],
         selectedOption: json["selectedOption"] == null
