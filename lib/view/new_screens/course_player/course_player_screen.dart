@@ -11,6 +11,7 @@ import 'package:new_graket_acadimy/core/constants/colors.dart';
 import 'package:new_graket_acadimy/core/functions/video_seek.dart';
 import 'package:new_graket_acadimy/core/services/content_view_tracker.dart';
 import 'package:new_graket_acadimy/core/services/video_watch_tracker.dart';
+import 'package:new_graket_acadimy/core/services/youtube_quality.dart';
 import 'package:new_graket_acadimy/model/courses/get_course_by_id_model.dart';
 import 'package:new_graket_acadimy/routing/app_routes.dart';
 import 'package:new_graket_acadimy/view/new_screens/course_player/notes_bottom_sheet.dart';
@@ -35,6 +36,10 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen>
   YoutubePlayerController? _yt;
   String? _activeVideoId;
   bool _finishedFired = false;
+
+  /// The resolution the student picked. It carries over to every lesson
+  /// opened on this screen; [YoutubeQuality.auto] leaves it to YouTube.
+  String _quality = YoutubeQuality.auto;
 
   /// Records which parts of each video are actually played, so the dashboard
   /// can report a real watch percentage rather than a completion checkbox.
@@ -173,6 +178,8 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen>
 
   YoutubePlayerController _createController(String id) {
     late final YoutubePlayerController controller;
+    var qualityBridgeInstalled = false;
+    var qualityApplied = false;
     controller =
         YoutubePlayerController(
           initialVideoId: id,
@@ -196,6 +203,23 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen>
                 ? value.metaData.duration.inSeconds
                 : null,
           );
+
+          // The quality listener has to be in the webview before YouTube's
+          // embed iframe loads: it can't be added to a frame that exists.
+          final webView = value.webViewController;
+          if (!qualityBridgeInstalled && webView != null) {
+            qualityBridgeInstalled = true;
+            YoutubeQuality.install(webView);
+          }
+
+          // A quality picked on an earlier lesson carries over, but YouTube
+          // only takes it once this video is streaming.
+          if (!qualityApplied && value.isPlaying) {
+            qualityApplied = true;
+            if (_quality != YoutubeQuality.auto) {
+              YoutubeQuality.select(controller, _quality);
+            }
+          }
 
           if (_finishedFired) return;
           if (value.playerState == PlayerState.ended) {
@@ -283,6 +307,15 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen>
     if (!wasPlaying) controller.pause();
   }
 
+  /// Switches the playing lesson to [level] and remembers the choice for the
+  /// lessons opened next.
+  void _selectQuality(YoutubePlayerController controller, String level) {
+    if (!identical(_yt, controller)) return;
+
+    setState(() => _quality = level);
+    YoutubeQuality.select(controller, level);
+  }
+
   @override
   Widget build(BuildContext context) {
     return GetBuilder<CoursePlayerControllerImp>(
@@ -291,7 +324,7 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen>
 
         // Keep the portrait control row usable on narrow phones. Fullscreen
         // and wider layouts retain playback speed; compact portrait keeps the
-        // higher-priority seek, timeline, time, and fullscreen controls.
+        // higher-priority timeline, time, quality, and fullscreen controls.
         final compactVideoControls =
             MediaQuery.sizeOf(context).width < 400 &&
             MediaQuery.orientationOf(context) == Orientation.portrait;
@@ -333,7 +366,7 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen>
             key: ValueKey('yt-$_activeVideoId'),
             onEnterFullScreen: _onEnterFullScreen,
             onExitFullScreen: _onExitFullScreen,
-            player: YoutubePlayer(
+            player: _LessonYoutubePlayer(
               controller: ytController,
               showVideoProgressIndicator: true,
               progressIndicatorColor: AppColor.primaryColor,
@@ -341,18 +374,17 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen>
                 playedColor: AppColor.primaryColor,
                 handleColor: AppColor.primaryColor,
               ),
-              // Keep explicit YouTube-style skips inside the player's own
-              // overlay so they work in both the embedded and fullscreen
-              // layouts. The timeline remains draggable for precise seeking.
+              // YouTube-style skips either side of the centre play button,
+              // in both the embedded and fullscreen layouts. The timeline
+              // remains draggable for precise seeking.
+              overlay: _PlayerSkipControls(
+                controller: ytController,
+                step: _seekStep,
+                onSeek: _seekBy,
+              ),
               actionsPadding: const EdgeInsets.symmetric(horizontal: 2),
               bottomActions: [
-                _PlayerSeekButton(
-                  controller: ytController,
-                  offset: -_seekStep,
-                  tooltip: 'Rewind 10 seconds',
-                  icon: Icons.replay_10_rounded,
-                  onSeek: _seekBy,
-                ),
+                const SizedBox(width: 12),
                 const CurrentPosition(),
                 const SizedBox(width: 4),
                 ProgressBar(
@@ -363,12 +395,10 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen>
                   ),
                 ),
                 const RemainingDuration(),
-                _PlayerSeekButton(
+                _PlayerQualityButton(
                   controller: ytController,
-                  offset: _seekStep,
-                  tooltip: 'Forward 10 seconds',
-                  icon: Icons.forward_10_rounded,
-                  onSeek: _seekBy,
+                  selected: _quality,
+                  onSelected: _selectQuality,
                 ),
                 if (!compactVideoControls) const PlaybackSpeedButton(),
                 const FullScreenButton(),
@@ -547,33 +577,80 @@ class _InheritedYtPlayer extends InheritedWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  Player seek controls — available in embedded and fullscreen modes.
+//  Player controls — skips and quality, in embedded and fullscreen modes.
 // ═══════════════════════════════════════════════════════════════
-/// A compact skip control that stays in sync with the YouTube controller.
+/// A [YoutubePlayer] with extra controls layered over the video.
 ///
-/// Listening here matters because [YoutubePlayer] retains its action widgets
-/// while only its internal state rebuilds. It also lets the boundary button
-/// disable immediately at 0 or at the end of the video.
-class _PlayerSeekButton extends StatefulWidget {
+/// [YoutubePlayer] only takes custom widgets in its top and bottom bars, and
+/// in fullscreen [YoutubePlayerBuilder] shows the [YoutubePlayer] it was given
+/// on its own. Subclassing keeps [overlay] inside that widget, so its controls
+/// are there in both layouts.
+class _LessonYoutubePlayer extends YoutubePlayer {
+  final Widget overlay;
+
+  const _LessonYoutubePlayer({
+    required super.controller,
+    required this.overlay,
+    super.showVideoProgressIndicator,
+    super.progressIndicatorColor,
+    super.progressColors,
+    super.actionsPadding,
+    super.bottomActions,
+  });
+
+  @override
+  State<YoutubePlayer> createState() => _LessonYoutubePlayerState();
+}
+
+class _LessonYoutubePlayerState extends State<_LessonYoutubePlayer> {
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        YoutubePlayer(
+          controller: widget.controller,
+          showVideoProgressIndicator: widget.showVideoProgressIndicator,
+          progressIndicatorColor: widget.progressIndicatorColor,
+          progressColors: widget.progressColors,
+          actionsPadding: widget.actionsPadding,
+          bottomActions: widget.bottomActions,
+        ),
+        // In fullscreen nothing above the player provides a Material for the
+        // overlay's buttons. A transparent one still lets taps that miss
+        // them reach the player's own controls underneath.
+        Positioned.fill(
+          child: Material(
+            type: MaterialType.transparency,
+            child: widget.overlay,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Rewind and forward buttons either side of the player's centre play
+/// button, shown and hidden together with the rest of its controls.
+///
+/// Listening to the controller here keeps visibility in step with the
+/// player's own controls, and disables a button as soon as the playhead
+/// reaches 0 or the end of the video.
+class _PlayerSkipControls extends StatefulWidget {
   final YoutubePlayerController controller;
-  final Duration offset;
-  final String tooltip;
-  final IconData icon;
+  final Duration step;
   final void Function(YoutubePlayerController, Duration) onSeek;
 
-  const _PlayerSeekButton({
+  const _PlayerSkipControls({
     required this.controller,
-    required this.offset,
-    required this.tooltip,
-    required this.icon,
+    required this.step,
     required this.onSeek,
   });
 
   @override
-  State<_PlayerSeekButton> createState() => _PlayerSeekButtonState();
+  State<_PlayerSkipControls> createState() => _PlayerSkipControlsState();
 }
 
-class _PlayerSeekButtonState extends State<_PlayerSeekButton> {
+class _PlayerSkipControlsState extends State<_PlayerSkipControls> {
   @override
   void initState() {
     super.initState();
@@ -581,7 +658,7 @@ class _PlayerSeekButtonState extends State<_PlayerSeekButton> {
   }
 
   @override
-  void didUpdateWidget(_PlayerSeekButton oldWidget) {
+  void didUpdateWidget(_PlayerSkipControls oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!identical(oldWidget.controller, widget.controller)) {
       oldWidget.controller.removeListener(_onControllerChanged);
@@ -599,14 +676,14 @@ class _PlayerSeekButtonState extends State<_PlayerSeekButton> {
     if (mounted) setState(() {});
   }
 
-  bool get _canSeek {
+  bool _canSeek(Duration offset) {
     final value = widget.controller.value;
     final duration = widget.controller.metadata.duration;
     if (!value.isReady || duration <= Duration.zero) return false;
 
     return clampedVideoSeekTarget(
           currentPosition: value.position,
-          offset: widget.offset,
+          offset: offset,
           totalDuration: duration,
         ) !=
         value.position;
@@ -614,17 +691,136 @@ class _PlayerSeekButtonState extends State<_PlayerSeekButton> {
 
   @override
   Widget build(BuildContext context) {
+    final value = widget.controller.value;
+    final visible = value.isControlsVisible && !value.hasError;
+    final seconds = widget.step.inSeconds;
+
+    // Hidden buttons must not swallow the tap that brings the controls back.
+    return IgnorePointer(
+      ignoring: !visible,
+      child: AnimatedOpacity(
+        opacity: visible ? 1 : 0,
+        duration: const Duration(milliseconds: 300),
+        child: Center(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _skipButton(
+                offset: -widget.step,
+                tooltip: 'Rewind $seconds seconds',
+                icon: Icons.replay_10_rounded,
+              ),
+              // Room for the player's own 60px play/pause button.
+              const SizedBox(width: 120),
+              _skipButton(
+                offset: widget.step,
+                tooltip: 'Forward $seconds seconds',
+                icon: Icons.forward_10_rounded,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _skipButton({
+    required Duration offset,
+    required String tooltip,
+    required IconData icon,
+  }) {
     return IconButton(
-      tooltip: widget.tooltip,
-      onPressed: _canSeek
-          ? () => widget.onSeek(widget.controller, widget.offset)
+      tooltip: tooltip,
+      onPressed: _canSeek(offset)
+          ? () => widget.onSeek(widget.controller, offset)
           : null,
-      icon: Icon(widget.icon),
+      icon: Icon(icon),
       color: Colors.white,
       disabledColor: Colors.white38,
+      iconSize: 36,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints.tightFor(width: 56, height: 56),
+    );
+  }
+}
+
+/// Opens a menu of the resolutions YouTube offers for the current video.
+///
+/// The list is read when the menu opens: it is only known once the video has
+/// loaded, and what Auto is streaming changes as bandwidth does.
+class _PlayerQualityButton extends StatelessWidget {
+  final YoutubePlayerController controller;
+  final String selected;
+  final void Function(YoutubePlayerController, String) onSelected;
+
+  const _PlayerQualityButton({
+    required this.controller,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  Future<void> _openMenu(BuildContext context) async {
+    // Anchored to the button, the way PlaybackSpeedButton's menu is.
+    final button = context.findRenderObject()! as RenderBox;
+    final overlay =
+        Navigator.of(context).overlay!.context.findRenderObject()! as RenderBox;
+    final position = RelativeRect.fromRect(
+      Rect.fromPoints(
+        button.localToGlobal(Offset.zero, ancestor: overlay),
+        button.localToGlobal(
+          button.size.bottomRight(Offset.zero),
+          ancestor: overlay,
+        ),
+      ),
+      Offset.zero & overlay.size,
+    );
+
+    final options = await YoutubeQuality.read(controller);
+    if (!context.mounted) return;
+    if (options == null) {
+      Get.snackbar(
+        'Video quality',
+        'Quality options aren\'t available for this video right now.',
+        snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 2),
+      );
+      return;
+    }
+
+    final isAuto = selected == YoutubeQuality.auto;
+    final level = await showMenu<String>(
+      context: context,
+      position: position,
+      items: [
+        CheckedPopupMenuItem(
+          value: YoutubeQuality.auto,
+          checked: isAuto,
+          // Like YouTube, show what Auto has settled on.
+          child: Text(
+            isAuto ? 'Auto (${YoutubeQuality.label(options.current)})' : 'Auto',
+          ),
+        ),
+        for (final level in options.levels)
+          CheckedPopupMenuItem(
+            value: level,
+            checked: selected == level,
+            child: Text(YoutubeQuality.label(level)),
+          ),
+      ],
+    );
+    if (level != null && level != selected) onSelected(controller, level);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: 'Video quality',
+      onPressed: () => _openMenu(context),
+      icon: const Icon(Icons.high_quality_rounded),
+      color: Colors.white,
       iconSize: 22,
       padding: EdgeInsets.zero,
-      constraints: const BoxConstraints.tightFor(width: 44, height: 44),
+      constraints: const BoxConstraints.tightFor(width: 40, height: 44),
     );
   }
 }
