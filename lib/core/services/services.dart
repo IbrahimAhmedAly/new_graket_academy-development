@@ -1,6 +1,7 @@
-
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'screen_protection_service.dart';
 
 class MyServices extends GetxService {
   late SharedPreferences sharedPreferences;
@@ -34,4 +35,6 @@ class MyServices extends GetxService {
 
 Future<void> initialServices() async {
   await Get.putAsync(() => MyServices().init());
+  // Before the first frame, so no screen is ever shown unprotected.
+  await Get.putAsync(() => ScreenProtectionService().init());
 }

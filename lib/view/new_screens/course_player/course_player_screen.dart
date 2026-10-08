@@ -10,6 +10,7 @@ import 'package:new_graket_acadimy/core/constants/app_strings.dart';
 import 'package:new_graket_acadimy/core/constants/colors.dart';
 import 'package:new_graket_acadimy/core/functions/video_seek.dart';
 import 'package:new_graket_acadimy/core/services/content_view_tracker.dart';
+import 'package:new_graket_acadimy/core/services/screen_protection_service.dart';
 import 'package:new_graket_acadimy/core/services/video_watch_tracker.dart';
 import 'package:new_graket_acadimy/core/services/youtube_quality.dart';
 import 'package:new_graket_acadimy/model/courses/get_course_by_id_model.dart';
@@ -52,11 +53,24 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen>
   /// previous one exactly once.
   String? _trackedContentId;
 
+  /// Pauses the lesson whenever the screen starts being captured.
+  Worker? _captureWorker;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     Get.put(CoursePlayerControllerImp());
+
+    // The capture cover hides the picture, but a recording would still pick
+    // up the lesson's audio, so playback stops too.
+    final protection = ScreenProtectionService.instance;
+    if (protection != null) {
+      _captureWorker = ever<bool>(protection.isCaptured, (captured) {
+        final yt = _yt;
+        if (captured && yt != null && yt.value.isPlaying) yt.pause();
+      });
+    }
   }
 
   /// Banks what has been tracked so far whenever the app leaves the screen.
@@ -95,6 +109,7 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _captureWorker?.dispose();
 
     // Flush before tearing down: whatever was watched up to this moment still
     // counts, even though the screen is going away.
@@ -178,7 +193,7 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen>
 
   YoutubePlayerController _createController(String id) {
     late final YoutubePlayerController controller;
-    var qualityBridgeInstalled = false;
+    var webViewPrepared = false;
     var qualityApplied = false;
     controller =
         YoutubePlayerController(
@@ -204,12 +219,14 @@ class _CoursePlayerScreenState extends State<CoursePlayerScreen>
                 : null,
           );
 
-          // The quality listener has to be in the webview before YouTube's
-          // embed iframe loads: it can't be added to a frame that exists.
+          // The quality listener and the AirPlay/picture-in-picture lock have
+          // to be in the webview before YouTube's embed iframe loads: neither
+          // can be added to a frame that already exists.
           final webView = value.webViewController;
-          if (!qualityBridgeInstalled && webView != null) {
-            qualityBridgeInstalled = true;
+          if (!webViewPrepared && webView != null) {
+            webViewPrepared = true;
             YoutubeQuality.install(webView);
+            ScreenProtectionService.instance?.protectWebView(webView);
           }
 
           // A quality picked on an earlier lesson carries over, but YouTube

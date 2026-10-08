@@ -6,7 +6,6 @@ import 'package:new_graket_acadimy/core/constants/app_strings.dart';
 import 'package:new_graket_acadimy/core/constants/colors.dart';
 import 'package:new_graket_acadimy/core/class/request_status.dart';
 import 'package:new_graket_acadimy/core/debug_print.dart';
-import 'package:new_graket_acadimy/core/services/screen_security.dart';
 import 'package:new_graket_acadimy/view/new_widgets/auth_widgets/auth_text_field.dart';
 import 'package:new_graket_acadimy/view/new_widgets/auth_widgets/custom_auth_button.dart';
 
@@ -20,12 +19,6 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  @override
-  void initState() {
-    super.initState();
-    disableScreenSecurity();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

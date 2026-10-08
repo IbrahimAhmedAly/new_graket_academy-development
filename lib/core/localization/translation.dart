@@ -214,6 +214,11 @@ class MyTranslation extends Translations {
           AppStrings.noNotifications :"لا توجد إشعارات بعد",
           AppStrings.youAreAllCaughtUp :"لقد اطّلعت على كل شيء!",
           AppStrings.deleteNotification :"حذف",
+          /// screen protection
+          AppStrings.protectedContent :"محتوى محمي",
+          AppStrings.screenshotNotAllowed :"لا يُسمح بأخذ لقطات شاشة للمحتوى التعليمي.",
+          AppStrings.screenCaptureBlockedTitle :"تسجيل الشاشة غير مسموح",
+          AppStrings.screenCaptureBlockedMessage :"لحماية المحتوى التعليمي، يُخفى التطبيق أثناء تسجيل الشاشة أو مشاركتها أو عرضها على جهاز آخر. أوقف ذلك للمتابعة.",
         },
         "en": {
           "1": "choose language",
@@ -427,6 +432,11 @@ class MyTranslation extends Translations {
           AppStrings.noNotifications :"No notifications yet",
           AppStrings.youAreAllCaughtUp :"You're all caught up!",
           AppStrings.deleteNotification :"Delete",
+          /// screen protection
+          AppStrings.protectedContent :"Protected content",
+          AppStrings.screenshotNotAllowed :"Screenshots of course content aren't allowed.",
+          AppStrings.screenCaptureBlockedTitle :"Screen recording isn't allowed",
+          AppStrings.screenCaptureBlockedMessage :"To protect the course content, the app is hidden while your screen is being recorded, shared or mirrored. Stop it to continue.",
 
         }
       };

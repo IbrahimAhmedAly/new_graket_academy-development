@@ -282,6 +282,13 @@ class AppStrings {
   static const String youAreAllCaughtUp = "You're all caught up!";
   static const String deleteNotification = "Delete";
 
+  /// screen protection
+  static const String protectedContent = "protectedContent";
+  static const String screenshotNotAllowed = "screenshotNotAllowed";
+  static const String screenCaptureBlockedTitle = "screenCaptureBlockedTitle";
+  static const String screenCaptureBlockedMessage =
+      "screenCaptureBlockedMessage";
+
   /// shared keys
 }
 

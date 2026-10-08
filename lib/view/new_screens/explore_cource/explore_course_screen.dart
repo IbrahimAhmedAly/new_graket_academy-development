@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:get/get.dart';
 import 'package:new_graket_acadimy/core/constants/app_dimentions.dart';
 import 'package:new_graket_acadimy/core/constants/assets_path.dart';
@@ -11,6 +12,7 @@ import 'package:new_graket_acadimy/core/class/request_status.dart';
 import 'package:new_graket_acadimy/core/common/widgets/shimmer_loading.dart';
 import 'package:new_graket_acadimy/core/constants/app_strings.dart';
 import 'package:new_graket_acadimy/core/functions/date_time_extensions.dart';
+import 'package:new_graket_acadimy/core/services/screen_protection_service.dart';
 import 'package:new_graket_acadimy/routing/app_routes.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
@@ -31,6 +33,12 @@ class _ExploreCourseScreenState extends State<ExploreCourseScreen> {
   String _currentVideoId = '';
   final ScrollController _scrollController = ScrollController();
   bool _showFloatingPreview = false;
+
+  /// Pauses the preview whenever the screen starts being captured.
+  Worker? _captureWorker;
+
+  /// The player webview already carrying the AirPlay/picture-in-picture lock.
+  InAppWebViewController? _protectedWebView;
 
   String _stringValue(dynamic value, {String fallback = ""}) {
     if (value == null) return fallback;
@@ -67,14 +75,34 @@ class _ExploreCourseScreenState extends State<ExploreCourseScreen> {
     _controller = YoutubePlayerController(
       initialVideoId: 'dQw4w9WgXcQ',
       flags: const YoutubePlayerFlags(autoPlay: false, mute: false),
-    );
+    )..addListener(_protectPreviewWebView);
     _scrollController.addListener(_onScroll);
+
+    // The capture cover hides the picture, but a recording would still pick
+    // up the preview's audio, so playback stops too.
+    final protection = ScreenProtectionService.instance;
+    if (protection != null) {
+      _captureWorker = ever<bool>(protection.isCaptured, (captured) {
+        if (captured && _controller.value.isPlaying) _controller.pause();
+      });
+    }
+  }
+
+  /// The lock has to be in the webview before YouTube's embed iframe loads,
+  /// so it goes in as soon as the player creates its webview.
+  void _protectPreviewWebView() {
+    final webView = _controller.value.webViewController;
+    if (webView == null || identical(webView, _protectedWebView)) return;
+    _protectedWebView = webView;
+    ScreenProtectionService.instance?.protectWebView(webView);
   }
 
   @override
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _captureWorker?.dispose();
+    _controller.removeListener(_protectPreviewWebView);
     _controller.dispose();
     super.dispose();
   }
@@ -126,19 +154,27 @@ class _ExploreCourseScreenState extends State<ExploreCourseScreen> {
         final name = _stringValue(details?.title, fallback: "Course Name");
         final cover = _stringValue(details?.thumbnail);
         final isSubscriber = controller.isSubscriber;
-        final description =
-            _stringValue(details?.description, fallback: "No description");
+        final description = _stringValue(
+          details?.description,
+          fallback: "No description",
+        );
         final priceValue = details?.discountPrice ?? details?.price ?? 0;
         final originalPrice = details?.price ?? 0;
-        final hasDiscount = details?.discountPrice != null &&
+        final hasDiscount =
+            details?.discountPrice != null &&
             details!.discountPrice! > 0 &&
             details.discountPrice! < originalPrice;
-        final priceText =
-            priceValue == 0 ? "ask admin" : "${priceValue.toStringAsFixed(0)} EGP";
-        final categoryName =
-            _stringValue(details?.category?.name, fallback: "Category");
-        final instructorName =
-            _stringValue(details?.instructor?.name, fallback: "Instructor");
+        final priceText = priceValue == 0
+            ? "ask admin"
+            : "${priceValue.toStringAsFixed(0)} EGP";
+        final categoryName = _stringValue(
+          details?.category?.name,
+          fallback: "Category",
+        );
+        final instructorName = _stringValue(
+          details?.instructor?.name,
+          fallback: "Instructor",
+        );
         final rating = details?.averageRating ?? 0;
         final totalReviews = details?.totalReviews ?? 0;
         final durationText = _formatDuration(details?.totalDuration ?? 0);
@@ -189,8 +225,11 @@ class _ExploreCourseScreenState extends State<ExploreCourseScreen> {
                             color: Colors.black.withValues(alpha: 0.3),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.arrow_back_ios_new_rounded,
-                              color: Colors.white, size: 18),
+                          child: const Icon(
+                            Icons.arrow_back_ios_new_rounded,
+                            color: Colors.white,
+                            size: 18,
+                          ),
                         ),
                       ),
                       actions: [
@@ -215,13 +254,13 @@ class _ExploreCourseScreenState extends State<ExploreCourseScreen> {
                           behavior: HitTestBehavior.opaque,
                           onVerticalDragUpdate: _onVerticalDrag,
                           onVerticalDragEnd: _onVerticalDragEnd,
-                          child: isSubscriber &&
+                          child:
+                              isSubscriber &&
                                   controller.previewVideoUrl.isNotEmpty
                               ? YoutubePlayer(
                                   controller: _controller,
                                   showVideoProgressIndicator: true,
-                                  progressIndicatorColor:
-                                      AppColor.primaryColor,
+                                  progressIndicatorColor: AppColor.primaryColor,
                                   progressColors: ProgressBarColors(
                                     playedColor: AppColor.primaryColor,
                                     handleColor: AppColor.primaryColor,
@@ -247,9 +286,9 @@ class _ExploreCourseScreenState extends State<ExploreCourseScreen> {
                                       ),
                                       errorWidget: (context, url, error) =>
                                           Image.asset(
-                                        AssetsPath.courseImage_1,
-                                        fit: BoxFit.cover,
-                                      ),
+                                            AssetsPath.courseImage_1,
+                                            fit: BoxFit.cover,
+                                          ),
                                     ),
                                     // Gradient overlay
                                     Positioned.fill(
@@ -260,8 +299,9 @@ class _ExploreCourseScreenState extends State<ExploreCourseScreen> {
                                             end: Alignment.bottomCenter,
                                             colors: [
                                               Colors.transparent,
-                                              Colors.black
-                                                  .withValues(alpha: 0.5),
+                                              Colors.black.withValues(
+                                                alpha: 0.5,
+                                              ),
                                             ],
                                           ),
                                         ),
@@ -300,8 +340,9 @@ class _ExploreCourseScreenState extends State<ExploreCourseScreen> {
                                 ),
                                 decoration: BoxDecoration(
                                   color: AppColor.primaryLight,
-                                  borderRadius:
-                                      BorderRadius.circular(AppRadius.radius20),
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.radius20,
+                                  ),
                                 ),
                                 child: Text(
                                   categoryName,
@@ -354,8 +395,11 @@ class _ExploreCourseScreenState extends State<ExploreCourseScreen> {
                               // ── Rating + reviews ──
                               Row(
                                 children: [
-                                  const Icon(Icons.star_rounded,
-                                      color: AppColor.starColor, size: 18),
+                                  const Icon(
+                                    Icons.star_rounded,
+                                    color: AppColor.starColor,
+                                    size: 18,
+                                  ),
                                   SizedBox(width: AppWidth.w4),
                                   Text(
                                     rating.toStringAsFixed(1),
@@ -408,8 +452,9 @@ class _ExploreCourseScreenState extends State<ExploreCourseScreen> {
                               // ── Discount countdown (not purchased, has expiry) ──
                               if (!controller.isPurchased &&
                                   details?.discountExpiresAt != null &&
-                                  details!.discountExpiresAt!
-                                      .isAfter(DateTime.now())) ...[
+                                  details!.discountExpiresAt!.isAfter(
+                                    DateTime.now(),
+                                  )) ...[
                                 SizedBox(height: AppHeight.h12),
                                 _DiscountCountdownBanner(
                                   expiresAt: details.discountExpiresAt!,
@@ -434,10 +479,7 @@ class _ExploreCourseScreenState extends State<ExploreCourseScreen> {
                               // ── About this course ──
                               _SectionTitle(title: "About this course"),
                               SizedBox(height: AppHeight.h8),
-                              _ExpandableText(
-                                text: description,
-                                maxLines: 4,
-                              ),
+                              _ExpandableText(text: description, maxLines: 4),
                               SizedBox(height: AppHeight.h28),
 
                               // ── Instructor ──
@@ -447,8 +489,9 @@ class _ExploreCourseScreenState extends State<ExploreCourseScreen> {
                                 instructor: details?.instructor,
                                 fallbackName: instructorName,
                               ),
-                              if (_stringValue(details?.instructor?.bio)
-                                  .isNotEmpty) ...[
+                              if (_stringValue(
+                                details?.instructor?.bio,
+                              ).isNotEmpty) ...[
                                 SizedBox(height: AppHeight.h8),
                                 Text(
                                   _stringValue(details?.instructor?.bio),
@@ -474,8 +517,7 @@ class _ExploreCourseScreenState extends State<ExploreCourseScreen> {
                               // ── Reviews ──
                               _ReviewsSection(
                                 reviews: details?.reviews ?? const [],
-                                averageRating:
-                                    details?.averageRating ?? 0,
+                                averageRating: details?.averageRating ?? 0,
                                 totalReviews: details?.totalReviews ?? 0,
                                 courseId: details?.id ?? '',
                                 userToken: controller.userToken,
@@ -597,19 +639,30 @@ class _ExploreCourseScreenState extends State<ExploreCourseScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _StatItem(
-              icon: Icons.access_time_rounded,
-              label: duration,
-              subtitle: "Duration"),
-          Container(width: 1, height: 36, color: AppColor.gray.withValues(alpha: 0.2)),
+            icon: Icons.access_time_rounded,
+            label: duration,
+            subtitle: "Duration",
+          ),
+          Container(
+            width: 1,
+            height: 36,
+            color: AppColor.gray.withValues(alpha: 0.2),
+          ),
           _StatItem(
-              icon: Icons.play_circle_outline_rounded,
-              label: videos == 0 ? "—" : "$videos",
-              subtitle: "Videos"),
-          Container(width: 1, height: 36, color: AppColor.gray.withValues(alpha: 0.2)),
+            icon: Icons.play_circle_outline_rounded,
+            label: videos == 0 ? "—" : "$videos",
+            subtitle: "Videos",
+          ),
+          Container(
+            width: 1,
+            height: 36,
+            color: AppColor.gray.withValues(alpha: 0.2),
+          ),
           _StatItem(
-              icon: Icons.quiz_outlined,
-              label: "$quizzes",
-              subtitle: "Quizzes"),
+            icon: Icons.quiz_outlined,
+            label: "$quizzes",
+            subtitle: "Quizzes",
+          ),
         ],
       ),
     );
@@ -673,8 +726,11 @@ class _ExploreCourseScreenState extends State<ExploreCourseScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.play_circle_outline_rounded,
-                          color: Colors.white, size: 20),
+                      const Icon(
+                        Icons.play_circle_outline_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                       SizedBox(width: AppWidth.w8),
                       Text(
                         "Continue Learning",
@@ -782,12 +838,10 @@ class _ExploreCourseScreenState extends State<ExploreCourseScreen> {
                           begin: Alignment.centerLeft,
                           end: Alignment.centerRight,
                         ),
-                        borderRadius:
-                            BorderRadius.circular(AppRadius.radius12),
+                        borderRadius: BorderRadius.circular(AppRadius.radius12),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColor.primaryColor
-                                .withValues(alpha: 0.3),
+                            color: AppColor.primaryColor.withValues(alpha: 0.3),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -988,9 +1042,9 @@ class _CourseContentWidgetState extends State<CourseContentWidget> {
 
   /// Sum of durations for a filtered content list. Returns minutes.
   int _sectionMinutes(List<Content> contents) => contents.fold<int>(
-      0,
-      (sum, c) =>
-          sum + ((c.duration ?? 0).isNegative ? 0 : (c.duration ?? 0)));
+    0,
+    (sum, c) => sum + ((c.duration ?? 0).isNegative ? 0 : (c.duration ?? 0)),
+  );
 
   String _formatDuration(int minutes) {
     if (minutes <= 0) return '';
@@ -1008,8 +1062,11 @@ class _CourseContentWidgetState extends State<CourseContentWidget> {
         child: Center(
           child: Column(
             children: [
-              Icon(Icons.folder_open_rounded,
-                  size: 48, color: AppColor.textHint),
+              Icon(
+                Icons.folder_open_rounded,
+                size: 48,
+                color: AppColor.textHint,
+              ),
               SizedBox(height: AppHeight.h12),
               Text(
                 "No content yet",
@@ -1026,11 +1083,15 @@ class _CourseContentWidgetState extends State<CourseContentWidget> {
     }
 
     // Build filtered section list
-    final filteredSections = widget.sections.map((s) {
-      final filtered =
-          (s.contents ?? const <Content>[]).where(_matchesFilter).toList();
-      return (section: s, contents: filtered);
-    }).where((x) => x.contents.isNotEmpty).toList();
+    final filteredSections = widget.sections
+        .map((s) {
+          final filtered = (s.contents ?? const <Content>[])
+              .where(_matchesFilter)
+              .toList();
+          return (section: s, contents: filtered);
+        })
+        .where((x) => x.contents.isNotEmpty)
+        .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1085,8 +1146,9 @@ class _CourseContentWidgetState extends State<CourseContentWidget> {
                 ],
               ),
               child: Theme(
-                data: Theme.of(context)
-                    .copyWith(dividerColor: Colors.transparent),
+                data: Theme.of(
+                  context,
+                ).copyWith(dividerColor: Colors.transparent),
                 child: ExpansionTile(
                   tilePadding: EdgeInsets.symmetric(
                     horizontal: AppPadding.pad16,
@@ -1114,8 +1176,9 @@ class _CourseContentWidgetState extends State<CourseContentWidget> {
                   collapsedIconColor: AppColor.textHint,
                   children: List.generate(contents.length, (contentIndex) {
                     final content = contents[contentIndex];
-                    final hasAccess =
-                        widget.controller.contentHasAccess(content);
+                    final hasAccess = widget.controller.contentHasAccess(
+                      content,
+                    );
                     return GestureDetector(
                       onTap: hasAccess
                           ? () {
@@ -1138,7 +1201,8 @@ class _CourseContentWidgetState extends State<CourseContentWidget> {
                                     ? AppColor.primaryLight
                                     : AppColor.gray.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(
-                                    AppRadius.radius10),
+                                  AppRadius.radius10,
+                                ),
                               ),
                               child: Icon(
                                 _contentIcon(content.type),
@@ -1250,9 +1314,10 @@ class _CourseDetailsSkeletonState extends State<_CourseDetailsSkeleton>
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     )..repeat(reverse: true);
-    _animation = Tween<double>(begin: 0.4, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _animation = Tween<double>(
+      begin: 0.4,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -1274,8 +1339,7 @@ class _CourseDetailsSkeletonState extends State<_CourseDetailsSkeleton>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Hero
-            ShimmerBox(
-                width: double.infinity, height: 220, borderRadius: 0),
+            ShimmerBox(width: double.infinity, height: 220, borderRadius: 0),
             Transform.translate(
               offset: const Offset(0, -20),
               child: Container(
@@ -1324,17 +1388,19 @@ class _CourseDetailsSkeletonState extends State<_CourseDetailsSkeleton>
                     SizedBox(height: AppHeight.h20),
                     // Stats row card
                     ShimmerBox(
-                        width: double.infinity,
-                        height: 70,
-                        borderRadius: 12),
+                      width: double.infinity,
+                      height: 70,
+                      borderRadius: 12,
+                    ),
                     SizedBox(height: AppHeight.h28),
                     // What you'll learn section
                     ShimmerBox(width: 160, height: 16),
                     SizedBox(height: AppHeight.h12),
                     ShimmerBox(
-                        width: double.infinity,
-                        height: 128,
-                        borderRadius: 15),
+                      width: double.infinity,
+                      height: 128,
+                      borderRadius: 15,
+                    ),
                     SizedBox(height: AppHeight.h28),
                     // About section title
                     ShimmerBox(width: 140, height: 16),
@@ -1380,14 +1446,16 @@ class _CourseDetailsSkeletonState extends State<_CourseDetailsSkeleton>
                     ),
                     SizedBox(height: AppHeight.h12),
                     ShimmerBox(
-                        width: double.infinity,
-                        height: 60,
-                        borderRadius: 12),
+                      width: double.infinity,
+                      height: 60,
+                      borderRadius: 12,
+                    ),
                     SizedBox(height: AppHeight.h8),
                     ShimmerBox(
-                        width: double.infinity,
-                        height: 60,
-                        borderRadius: 12),
+                      width: double.infinity,
+                      height: 60,
+                      borderRadius: 12,
+                    ),
                   ],
                 ),
               ),
@@ -1415,13 +1483,13 @@ class _ProgressBanner extends StatelessWidget {
     final titleText = isComplete
         ? 'Course Completed'
         : isStarted
-            ? 'Your Progress'
-            : 'Ready to Start';
+        ? 'Your Progress'
+        : 'Ready to Start';
     final subtitleText = isComplete
         ? 'You finished every lesson. Amazing work!'
         : isStarted
-            ? '${controller.completedContents} of ${controller.totalContents} lessons complete'
-            : 'Jump in and start learning';
+        ? '${controller.completedContents} of ${controller.totalContents} lessons complete'
+        : 'Jump in and start learning';
 
     return Container(
       padding: EdgeInsets.all(AppPadding.pad16),
@@ -1489,12 +1557,9 @@ class _ProgressBanner extends StatelessWidget {
                   child: LinearProgressIndicator(
                     value: (pct / 100).clamp(0.0, 1.0),
                     minHeight: 5,
-                    backgroundColor:
-                        AppColor.gray.withValues(alpha: 0.15),
+                    backgroundColor: AppColor.gray.withValues(alpha: 0.15),
                     valueColor: AlwaysStoppedAnimation<Color>(
-                      isComplete
-                          ? AppColor.greenColor
-                          : AppColor.primaryColor,
+                      isComplete ? AppColor.greenColor : AppColor.primaryColor,
                     ),
                   ),
                 ),
@@ -1507,8 +1572,7 @@ class _ProgressBanner extends StatelessWidget {
             style: TextStyle(
               fontSize: AppTextSize.textSize18,
               fontWeight: FontWeight.w800,
-              color:
-                  isComplete ? AppColor.greenColor : AppColor.primaryColor,
+              color: isComplete ? AppColor.greenColor : AppColor.primaryColor,
             ),
           ),
         ],
@@ -1550,8 +1614,11 @@ class _ReviewsSection extends StatelessWidget {
             child: Center(
               child: Column(
                 children: [
-                  const Icon(Icons.rate_review_outlined,
-                      size: 40, color: AppColor.textHint),
+                  const Icon(
+                    Icons.rate_review_outlined,
+                    size: 40,
+                    color: AppColor.textHint,
+                  ),
                   SizedBox(height: AppHeight.h8),
                   Text(
                     "No reviews yet",
@@ -1605,10 +1672,12 @@ class _ReviewsSection extends StatelessWidget {
           totalReviews: totalReviews,
         ),
         SizedBox(height: AppHeight.h16),
-        ...preview.map((r) => Padding(
-              padding: EdgeInsets.only(bottom: AppPadding.pad8),
-              child: _ReviewCard(review: r),
-            )),
+        ...preview.map(
+          (r) => Padding(
+            padding: EdgeInsets.only(bottom: AppPadding.pad8),
+            child: _ReviewCard(review: r),
+          ),
+        ),
         if (canSeeAll) ...[
           SizedBox(height: AppHeight.h8),
           Center(
@@ -1660,9 +1729,7 @@ class _RatingSummary extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColor.cardBg,
         borderRadius: BorderRadius.circular(AppRadius.radius15),
-        border: Border.all(
-          color: AppColor.starColor.withValues(alpha: 0.15),
-        ),
+        border: Border.all(color: AppColor.starColor.withValues(alpha: 0.15)),
       ),
       child: Row(
         children: [
@@ -1740,9 +1807,7 @@ class _ReviewCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColor.cardBg,
         borderRadius: BorderRadius.circular(AppRadius.radius12),
-        border: Border.all(
-          color: AppColor.gray.withValues(alpha: 0.12),
-        ),
+        border: Border.all(color: AppColor.gray.withValues(alpha: 0.12)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1932,7 +1997,9 @@ class _ReviewsBottomSheetState extends State<_ReviewsBottomSheet> {
           _reviews.addAll(newOnes);
           _page += 1;
           final totalPages = (metadata['totalPages'] as num?)?.toInt() ?? 0;
-          _hasMore = totalPages > 0 ? (_page - 1) < totalPages : newOnes.length >= _limit;
+          _hasMore = totalPages > 0
+              ? (_page - 1) < totalPages
+              : newOnes.length >= _limit;
         });
       } else {
         setState(() => _error = 'Could not load reviews');
@@ -2009,72 +2076,73 @@ class _ReviewsBottomSheetState extends State<_ReviewsBottomSheet> {
                         ),
                       )
                     : _reviews.isEmpty && _error.isNotEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.cloud_off_rounded,
-                                  size: 48,
-                                  color: AppColor.textHint,
-                                ),
-                                SizedBox(height: AppHeight.h12),
-                                Text(
-                                  _error,
-                                  style: TextStyle(
-                                    color: AppColor.textSecondary,
-                                    fontSize: AppTextSize.textSize14,
-                                  ),
-                                ),
-                                SizedBox(height: AppHeight.h12),
-                                GestureDetector(
-                                  onTap: _loadPage,
-                                  child: Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: AppPadding.pad20,
-                                      vertical: AppPadding.pad10,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppColor.primaryColor,
-                                      borderRadius: BorderRadius.circular(
-                                          AppRadius.radius25),
-                                    ),
-                                    child: const Text(
-                                      'Retry',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.cloud_off_rounded,
+                              size: 48,
+                              color: AppColor.textHint,
                             ),
-                          )
-                        : ListView.builder(
-                            controller: _scrollController,
-                            padding: EdgeInsets.all(AppPadding.pad16),
-                            itemCount: _reviews.length + (_hasMore ? 1 : 0),
-                            itemBuilder: (ctx, i) {
-                              if (i >= _reviews.length) {
-                                return Padding(
-                                  padding: EdgeInsets.symmetric(
-                                      vertical: AppPadding.pad16),
-                                  child: const Center(
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: AppColor.primaryColor,
-                                    ),
+                            SizedBox(height: AppHeight.h12),
+                            Text(
+                              _error,
+                              style: TextStyle(
+                                color: AppColor.textSecondary,
+                                fontSize: AppTextSize.textSize14,
+                              ),
+                            ),
+                            SizedBox(height: AppHeight.h12),
+                            GestureDetector(
+                              onTap: _loadPage,
+                              child: Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: AppPadding.pad20,
+                                  vertical: AppPadding.pad10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColor.primaryColor,
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.radius25,
                                   ),
-                                );
-                              }
-                              return Padding(
-                                padding:
-                                    EdgeInsets.only(bottom: AppPadding.pad8),
-                                child: _ReviewCard(review: _reviews[i]),
-                              );
-                            },
-                          ),
+                                ),
+                                child: const Text(
+                                  'Retry',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        controller: _scrollController,
+                        padding: EdgeInsets.all(AppPadding.pad16),
+                        itemCount: _reviews.length + (_hasMore ? 1 : 0),
+                        itemBuilder: (ctx, i) {
+                          if (i >= _reviews.length) {
+                            return Padding(
+                              padding: EdgeInsets.symmetric(
+                                vertical: AppPadding.pad16,
+                              ),
+                              child: const Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: AppColor.primaryColor,
+                                ),
+                              ),
+                            );
+                          }
+                          return Padding(
+                            padding: EdgeInsets.only(bottom: AppPadding.pad8),
+                            child: _ReviewCard(review: _reviews[i]),
+                          );
+                        },
+                      ),
               ),
             ],
           ),
@@ -2091,10 +2159,7 @@ class _InstructorCard extends StatelessWidget {
   final Instructor? instructor;
   final String fallbackName;
 
-  const _InstructorCard({
-    required this.instructor,
-    required this.fallbackName,
-  });
+  const _InstructorCard({required this.instructor, required this.fallbackName});
 
   String _initials(String? name) {
     if (name == null || name.trim().isEmpty) return '?';
@@ -2128,18 +2193,18 @@ class _InstructorCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.radius12),
         onTap: isTappable
             ? () => Get.toNamed(
-                  AppRoutesNames.instructorProfileScreen,
-                  arguments: {
-                    'instructorId': id,
-                    'profile': {
-                      'id': id,
-                      'name': name,
-                      'avatar': avatar,
-                      'title': title,
-                      'bio': instructor?.bio,
-                    },
+                AppRoutesNames.instructorProfileScreen,
+                arguments: {
+                  'instructorId': id,
+                  'profile': {
+                    'id': id,
+                    'name': name,
+                    'avatar': avatar,
+                    'title': title,
+                    'bio': instructor?.bio,
                   },
-                )
+                },
+              )
             : null,
         child: Padding(
           padding: EdgeInsets.all(AppPadding.pad4),
@@ -2152,8 +2217,7 @@ class _InstructorCard extends StatelessWidget {
                         width: 40,
                         height: 40,
                         fit: BoxFit.cover,
-                        errorWidget: (_, __, ___) =>
-                            _initialsAvatar(name),
+                        errorWidget: (_, __, ___) => _initialsAvatar(name),
                       ),
                     )
                   : _initialsAvatar(name),
@@ -2435,8 +2499,11 @@ class _DiscountCountdownBannerState extends State<_DiscountCountdownBanner> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.local_fire_department_rounded,
-              color: Colors.white, size: 22),
+          const Icon(
+            Icons.local_fire_department_rounded,
+            color: Colors.white,
+            size: 22,
+          ),
           SizedBox(width: AppWidth.w8),
           Expanded(
             child: Column(
@@ -2493,10 +2560,7 @@ class _ContinueWatchingBanner extends StatelessWidget {
           padding: EdgeInsets.all(AppPadding.pad12),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [
-                AppColor.primaryColor,
-                AppColor.primaryDark,
-              ],
+              colors: [AppColor.primaryColor, AppColor.primaryDark],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -2518,8 +2582,11 @@ class _ContinueWatchingBanner extends StatelessWidget {
                   color: Colors.white.withValues(alpha: 0.22),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.play_arrow_rounded,
-                    color: Colors.white, size: 24),
+                child: const Icon(
+                  Icons.play_arrow_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
               ),
               SizedBox(width: AppWidth.w12),
               Expanded(
@@ -2548,10 +2615,7 @@ class _ContinueWatchingBanner extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: Colors.white,
-              ),
+              const Icon(Icons.chevron_right_rounded, color: Colors.white),
             ],
           ),
         ),
@@ -2641,8 +2705,10 @@ class _RelatedCourseCard extends StatelessWidget {
                             fit: BoxFit.cover,
                           ),
                         )
-                      : Image.asset(AssetsPath.courseImage_1,
-                          fit: BoxFit.cover),
+                      : Image.asset(
+                          AssetsPath.courseImage_1,
+                          fit: BoxFit.cover,
+                        ),
                 ),
               ),
               Padding(
@@ -2690,9 +2756,7 @@ class _RelatedCourseCard extends StatelessWidget {
                     ),
                     SizedBox(height: AppHeight.h6),
                     Text(
-                      price == 0
-                          ? 'Free'
-                          : '${price.toStringAsFixed(0)} EGP',
+                      price == 0 ? 'Free' : '${price.toStringAsFixed(0)} EGP',
                       style: TextStyle(
                         fontSize: AppTextSize.textSize14,
                         fontWeight: FontWeight.w800,
@@ -2822,7 +2886,9 @@ void showPriceBreakdownSheet(
     backgroundColor: Colors.transparent,
     builder: (ctx) {
       final hasDiscount =
-          discountedPrice != null && discountedPrice > 0 && discountedPrice < originalPrice;
+          discountedPrice != null &&
+          discountedPrice > 0 &&
+          discountedPrice < originalPrice;
       final savings = hasDiscount ? originalPrice - discountedPrice : 0.0;
       final totalPayable = hasDiscount ? discountedPrice : originalPrice;
 
@@ -2869,11 +2935,7 @@ void showPriceBreakdownSheet(
                 color: AppColor.gray.withValues(alpha: 0.2),
                 height: AppPadding.pad20,
               ),
-              _priceRow(
-                label: 'Total',
-                value: totalPayable,
-                isBold: true,
-              ),
+              _priceRow(label: 'Total', value: totalPayable, isBold: true),
               if (hasDiscount && discountExpiresAt != null) ...[
                 SizedBox(height: AppHeight.h12),
                 Container(
@@ -2884,8 +2946,11 @@ void showPriceBreakdownSheet(
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.check_circle_rounded,
-                          color: AppColor.greenColor, size: 18),
+                      const Icon(
+                        Icons.check_circle_rounded,
+                        color: AppColor.greenColor,
+                        size: 18,
+                      ),
                       SizedBox(width: AppWidth.w8),
                       Expanded(
                         child: Text(
@@ -2924,7 +2989,9 @@ Widget _priceRow({
           child: Text(
             label,
             style: TextStyle(
-              fontSize: isBold ? AppTextSize.textSize15 : AppTextSize.textSize14,
+              fontSize: isBold
+                  ? AppTextSize.textSize15
+                  : AppTextSize.textSize14,
               fontWeight: isBold ? FontWeight.w700 : FontWeight.w400,
               color: AppColor.textPrimary,
             ),
@@ -2935,7 +3002,8 @@ Widget _priceRow({
           style: TextStyle(
             fontSize: isBold ? AppTextSize.textSize16 : AppTextSize.textSize14,
             fontWeight: isBold ? FontWeight.w800 : FontWeight.w600,
-            color: valueColor ??
+            color:
+                valueColor ??
                 (isBold ? AppColor.priceColor : AppColor.textPrimary),
           ),
         ),
@@ -2967,8 +3035,11 @@ class _InlineRetryRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.cloud_off_outlined,
-              size: 18, color: AppColor.textSecondary),
+          Icon(
+            Icons.cloud_off_outlined,
+            size: 18,
+            color: AppColor.textSecondary,
+          ),
           SizedBox(width: AppWidth.w8),
           Expanded(
             child: Text(

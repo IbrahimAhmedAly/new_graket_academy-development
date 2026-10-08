@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 
 import 'package:new_graket_acadimy/routing/app_routes.dart';
 
+import 'core/common/widgets/screen_capture_shield.dart';
 import 'core/constants/security_flags.dart';
 import 'core/functions/check_emulator.dart';
 import 'core/localization/translation.dart';
@@ -49,6 +50,10 @@ class MyApp extends StatelessWidget {
           title: 'Graket academy',
           debugShowCheckedModeBanner: false,
           getPages: getScreens,
+          // Hides every screen, dialogs included, while the screen is being
+          // recorded, shared or mirrored.
+          builder: (context, child) =>
+              ScreenCaptureShield(child: child ?? const SizedBox.shrink()),
           initialBinding: AppBinding(),
           translations: MyTranslation(),
           locale: initialLocale,

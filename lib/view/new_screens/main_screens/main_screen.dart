@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:new_graket_acadimy/controller/home_controller/home_controller.dart';
 import 'package:new_graket_acadimy/controller/wishlist_controller.dart';
 import 'package:new_graket_acadimy/core/constants/colors.dart';
-import 'package:new_graket_acadimy/core/services/screen_security.dart';
 import 'package:new_graket_acadimy/view/new_screens/main_screens/home_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/main_screens/my_course_screen.dart';
 import 'package:new_graket_acadimy/view/new_screens/main_screens/profile.dart'
@@ -28,7 +27,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   @override
   void initState() {
     super.initState();
-    enableScreenSecurity();
 
     _motionTabBarController = MotionTabBarController(
       initialIndex: widget.routeInitialIndex ?? 2,
